@@ -1,19 +1,47 @@
-import { TradeData, SimulationResult } from '@/types';
+import { SimulationResult } from '@/types';
 
-// Simple Moving Average Strategy Simulation
+type StrategyType = 'SMA_CROSS' | 'RSI';
+
+interface StrategyParams {
+    fast?: number;
+    slow?: number;
+    rsiPeriod?: number;
+    rsiOverbought?: number;
+    rsiOversold?: number;
+}
+
 export function calculateSimulation(
     prices: number[],
     fastPeriod: number = 9,
     slowPeriod: number = 21
 ): SimulationResult {
-    let balance = 10000; // Initial Capital
+    // Backward compatibility wrapper
+    return runBacktest(prices, 'SMA_CROSS', { fast: fastPeriod, slow: slowPeriod });
+}
+
+export function runBacktest(
+    prices: number[],
+    type: StrategyType,
+    params: StrategyParams
+): SimulationResult {
+    switch (type) {
+        case 'SMA_CROSS':
+            return runSmaCross(prices, params.fast || 9, params.slow || 21);
+        case 'RSI':
+            return runRsiStrategy(prices, params.rsiPeriod || 14, params.rsiOverbought || 70, params.rsiOversold || 30);
+        default:
+            return { totalPnL: 0, winRate: 0, trades: 0, equityCurve: [] };
+    }
+}
+
+function runSmaCross(prices: number[], fastPeriod: number, slowPeriod: number): SimulationResult {
+    let balance = 10000;
     let position = 0; // 0: None, 1: Long, -1: Short
     let entryPrice = 0;
     let trades = 0;
     let wins = 0;
     const equityCurve = [];
 
-    // Need enough data to calculate SMA
     if (prices.length < slowPeriod) {
         return { totalPnL: 0, winRate: 0, trades: 0, equityCurve: [] };
     }
@@ -21,17 +49,14 @@ export function calculateSimulation(
     for (let i = slowPeriod; i < prices.length; i++) {
         const currentPrice = prices[i];
 
-        // Calculate SMAs
         const fastSMA = calculateSMA(prices.slice(i - fastPeriod, i), fastPeriod);
         const slowSMA = calculateSMA(prices.slice(i - slowPeriod, i), slowPeriod);
         const prevFastSMA = calculateSMA(prices.slice(i - fastPeriod - 1, i - 1), fastPeriod);
         const prevSlowSMA = calculateSMA(prices.slice(i - slowPeriod - 1, i - 1), slowPeriod);
 
-        // Crossover Logic
+        // Golden Cross (Buy)
         if (prevFastSMA <= prevSlowSMA && fastSMA > slowSMA) {
-            // Golden Cross (Buy)
             if (position === -1) {
-                // Close Short
                 const pnl = (entryPrice - currentPrice) / entryPrice * balance;
                 balance += pnl;
                 if (pnl > 0) wins++;
@@ -39,10 +64,10 @@ export function calculateSimulation(
             }
             position = 1;
             entryPrice = currentPrice;
-        } else if (prevFastSMA >= prevSlowSMA && fastSMA < slowSMA) {
-            // Death Cross (Sell)
+        }
+        // Death Cross (Sell)
+        else if (prevFastSMA >= prevSlowSMA && fastSMA < slowSMA) {
             if (position === 1) {
-                // Close Long
                 const pnl = (currentPrice - entryPrice) / entryPrice * balance;
                 balance += pnl;
                 if (pnl > 0) wins++;
@@ -61,6 +86,12 @@ export function calculateSimulation(
         trades,
         equityCurve
     };
+}
+
+function runRsiStrategy(prices: number[], period: number, overbought: number, oversold: number): SimulationResult {
+    // Placeholder for RSI logic
+    // For now, return empty result or implement basic RSI
+    return { totalPnL: 0, winRate: 0, trades: 0, equityCurve: [] };
 }
 
 function calculateSMA(data: number[], period: number): number {
