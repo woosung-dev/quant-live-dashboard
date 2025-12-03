@@ -1,65 +1,123 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { PriceChart } from '@/components/charts/PriceChart';
+import { ProfitDisplay } from '@/components/simulation/ProfitDisplay';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { calculateSimulation } from '@/lib/simulation';
+import { SimulationResult } from '@/types';
+import { ProblemSection } from '@/components/sections/ProblemSection';
+import { SolutionSection } from '@/components/sections/SolutionSection';
+import { CTASection } from '@/components/sections/CTASection';
 
 export default function Home() {
+  const { price, isConnected } = useWebSocket('btcusdt');
+  const [history, setHistory] = useState<{ time: number; value: number }[]>([]);
+  const [prices, setPrices] = useState<number[]>([]);
+  const [result, setResult] = useState<SimulationResult>({
+    totalPnL: 0,
+    winRate: 0,
+    trades: 0,
+    equityCurve: []
+  });
+
+  // Fetch initial history
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=500');
+        const data = await res.json();
+        const initialPrices = data.map((d: any) => parseFloat(d[4])); // Close price
+        const initialHistory = data.map((d: any) => ({
+          time: d[0] / 1000,
+          value: parseFloat(d[4])
+        }));
+
+        setPrices(initialPrices);
+        setHistory(initialHistory);
+      } catch (e) {
+        console.error('Failed to fetch history', e);
+      }
+    };
+    fetchHistory();
+  }, []);
+
+  // Update with real-time data
+  useEffect(() => {
+    if (price > 0) {
+      setPrices(prev => {
+        const newPrices = [...prev, price];
+        // Keep last 1000 points to avoid memory leak in long run
+        if (newPrices.length > 1000) return newPrices.slice(-1000);
+        return newPrices;
+      });
+
+      setHistory(prev => {
+        const newPoint = { time: Date.now() / 1000, value: price };
+        // De-duplicate if time is same (unlikely with ms precision but good practice)
+        if (prev.length > 0 && prev[prev.length - 1].time === newPoint.time) {
+          return [...prev.slice(0, -1), newPoint];
+        }
+        return [...prev, newPoint];
+      });
+    }
+  }, [price]);
+
+  // Run Simulation
+  useEffect(() => {
+    if (prices.length > 0) {
+      const res = calculateSimulation(prices);
+      setResult(res);
+    }
+  }, [prices]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* Hero Section */}
+      <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
+
+        {/* Background Chart */}
+        <div className="absolute inset-0 z-0 opacity-30">
+          <PriceChart data={history} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* Content Overlay */}
+        <div className="z-10 flex flex-col items-center space-y-8 max-w-4xl w-full px-4">
+          <div className="text-center space-y-4">
+            <h1 className="text-6xl md:text-8xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">
+              QUANT<span className="text-primary">.LIVE</span>
+            </h1>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              실시간 트레이딩 전략 백테스트 & 시뮬레이션.
+              <br />
+              당신의 알고리즘이 실제 시장에서 어떻게 동작하는지 확인하세요.
+            </p>
+          </div>
+
+          {/* Live Simulation Card */}
+          <div className="w-full max-w-2xl">
+            <ProfitDisplay
+              pnl={result.totalPnL}
+              winRate={result.winRate}
+              trades={result.trades}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <div className="mt-2 flex justify-between text-xs text-gray-500 font-mono">
+              <span>상태: {isConnected ? '실시간 연결됨' : '연결 중...'}</span>
+              <span>BTC/USDT: ${price.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <button className="px-8 py-4 bg-primary text-black font-bold text-lg rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(0,255,148,0.5)]">
+            시뮬레이션 시작하기
+          </button>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <ProblemSection />
+      <SolutionSection />
+      <CTASection />
+
+    </main>
   );
 }
