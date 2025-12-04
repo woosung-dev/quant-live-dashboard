@@ -9,6 +9,8 @@ import { SimulationResult } from '@/types';
 import { ProblemSection } from '@/components/sections/ProblemSection';
 import { SolutionSection } from '@/components/sections/SolutionSection';
 import { CTASection } from '@/components/sections/CTASection';
+import { PublicNavbar } from '@/components/layout/PublicNavbar';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Home() {
   const { price, isConnected } = useWebSocket('btcusdt');
@@ -72,52 +74,56 @@ export default function Home() {
   }, [prices]);
 
   return (
-    <main className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Hero Section */}
-      <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
+    <>
+      <PublicNavbar />
+      <main className="min-h-screen bg-background text-foreground flex flex-col">
+        {/* Hero Section */}
+        <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
 
-        {/* Background Chart */}
-        <div className="absolute inset-0 z-0 opacity-30">
-          <PriceChart data={history} />
-        </div>
-
-        {/* Content Overlay */}
-        <div className="z-10 flex flex-col items-center space-y-8 max-w-4xl w-full px-4">
-          <div className="text-center space-y-4">
-            <h1 className="text-6xl md:text-8xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">
-              QUANT<span className="text-primary">.LIVE</span>
-            </h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              실시간 트레이딩 전략 백테스트 & 시뮬레이션.
-              <br />
-              당신의 알고리즘이 실제 시장에서 어떻게 동작하는지 확인하세요.
-            </p>
+          {/* Background Chart */}
+          <div className="absolute inset-0 z-0 opacity-30">
+            <PriceChart data={history} />
           </div>
 
-          {/* Live Simulation Card */}
-          <div className="w-full max-w-2xl">
-            <ProfitDisplay
-              pnl={result.totalPnL}
-              winRate={result.winRate}
-              trades={result.trades}
-            />
-            <div className="mt-2 flex justify-between text-xs text-gray-500 font-mono">
-              <span>상태: {isConnected ? '실시간 연결됨' : '연결 중...'}</span>
-              <span>BTC/USDT: ${price.toFixed(2)}</span>
+          {/* Content Overlay */}
+          <div className="z-10 flex flex-col items-center space-y-8 max-w-4xl w-full px-4">
+            <div className="text-center space-y-4">
+              <h1 className="text-6xl md:text-8xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">
+                QUANT<span className="text-primary">.LIVE</span>
+              </h1>
+              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                실시간 트레이딩 전략 백테스트 & 시뮬레이션.
+                <br />
+                당신의 알고리즘이 실제 시장에서 어떻게 동작하는지 확인하세요.
+              </p>
             </div>
+
+            {/* Live Simulation Card */}
+            <div className="w-full max-w-2xl">
+              <ProfitDisplay
+                pnl={result.totalPnL}
+                winRate={result.winRate}
+                trades={result.trades}
+              />
+              <div className="mt-2 flex justify-between text-xs text-gray-500 font-mono">
+                <span>상태: {isConnected ? '실시간 연결됨' : '연결 중...'}</span>
+                <span>BTC/USDT: ${price.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <button className="px-8 py-4 bg-primary text-black font-bold text-lg rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(0,255,148,0.5)]">
+              시뮬레이션 시작하기
+            </button>
           </div>
+        </section>
 
-          {/* CTA */}
-          <button className="px-8 py-4 bg-primary text-black font-bold text-lg rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(0,255,148,0.5)]">
-            시뮬레이션 시작하기
-          </button>
-        </div>
-      </section>
+        <ProblemSection />
+        <SolutionSection />
+        <CTASection />
 
-      <ProblemSection />
-      <SolutionSection />
-      <CTASection />
-
-    </main>
+      </main>
+      <Footer />
+    </>
   );
 }
