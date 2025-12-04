@@ -26,7 +26,31 @@ export const Navbar = () => {
                         className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors flex items-center gap-2"
                     >
                         <LayoutDashboard size={18} />
-                        Dashboard
+                        Overview
+                    </Link>
+                    <Link
+                        href="/dashboard/strategy"
+                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
+                    >
+                        Strategy
+                    </Link>
+                    <Link
+                        href="/dashboard/live"
+                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
+                    >
+                        Live
+                    </Link>
+                    <Link
+                        href="/dashboard/portfolio"
+                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
+                    >
+                        Portfolio
+                    </Link>
+                    <Link
+                        href="/dashboard/settings"
+                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
+                    >
+                        Settings
                     </Link>
 
                     <button

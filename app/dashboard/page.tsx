@@ -1,105 +1,70 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { StrategyCard } from '@/components/dashboard/StrategyCard';
-import { Plus, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Card } from '@/components/ui/card';
 
-interface Strategy {
-    id: string;
-    name: string;
-    type: string;
-    created_at: string;
-}
-
-export default function DashboardPage() {
-    const [strategies, setStrategies] = useState<Strategy[]>([]);
-    const [loading, setLoading] = useState(true);
-    const router = useRouter();
-
-    useEffect(() => {
-        const fetchStrategies = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data, error } = await supabase
-                .from('strategies')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (data) setStrategies(data);
-            setLoading(false);
-        };
-
-        fetchStrategies();
-    }, []);
-
-    const handleCreate = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data, error } = await supabase
-            .from('strategies')
-            .insert({
-                user_id: user.id,
-                name: 'New Strategy',
-                type: 'SMA_CROSS',
-                parameters: { fast: 9, slow: 21 }
-            })
-            .select()
-            .single();
-
-        if (data) {
-            router.push(`/dashboard/strategy/${data.id}`);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-gray-500" size={32} />
-            </div>
-        );
-    }
-
+export default function DashboardOverviewPage() {
     return (
-        <div>
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">My Strategies</h1>
-                <button
-                    onClick={handleCreate}
-                    className="bg-primary text-black font-bold px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90 transition-colors"
-                >
-                    <Plus size={20} />
-                    New Strategy
-                </button>
+        <div className="space-y-6">
+            <h1 className="text-3xl font-bold">Dashboard Overview</h1>
+
+            {/* Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-6">
+                    <h3 className="text-sm font-medium text-gray-500">Total Equity</h3>
+                    <p className="text-2xl font-bold">$12,345.67</p>
+                    <span className="text-xs text-green-500">+2.5% today</span>
+                </Card>
+                <Card className="p-6">
+                    <h3 className="text-sm font-medium text-gray-500">Active Bots</h3>
+                    <p className="text-2xl font-bold">3</p>
+                    <span className="text-xs text-gray-500">Running</span>
+                </Card>
+                <Card className="p-6">
+                    <h3 className="text-sm font-medium text-gray-500">Daily PnL</h3>
+                    <p className="text-2xl font-bold text-green-500">+$123.45</p>
+                </Card>
+                <Card className="p-6">
+                    <h3 className="text-sm font-medium text-gray-500">Win Rate</h3>
+                    <p className="text-2xl font-bold">68%</p>
+                    <span className="text-xs text-gray-500">Last 30 days</span>
+                </Card>
             </div>
 
-            {strategies.length === 0 ? (
-                <div className="text-center py-20 border border-dashed border-border rounded-xl">
-                    <p className="text-gray-400 mb-4">No strategies found.</p>
-                    <button
-                        onClick={handleCreate}
-                        className="text-primary hover:underline"
-                    >
-                        Create your first strategy
-                    </button>
-                </div>
-            ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {strategies.map(strategy => (
-                        <StrategyCard
-                            key={strategy.id}
-                            id={strategy.id}
-                            name={strategy.name}
-                            type={strategy.type}
-                            createdAt={strategy.created_at}
-                        />
-                    ))}
-                </div>
-            )}
+            {/* Placeholder for Equity Curve */}
+            <Card className="p-6 h-96 flex items-center justify-center bg-gray-50 dark:bg-gray-900 border-dashed">
+                <p className="text-gray-400">Equity Curve Chart Placeholder</p>
+            </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Recent Activity */}
+                <Card className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+                    <div className="space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex justify-between items-center border-b pb-2 last:border-0">
+                                <div>
+                                    <p className="font-medium">Bot #{i} executed BUY BTC</p>
+                                    <p className="text-xs text-gray-500">2 minutes ago</p>
+                                </div>
+                                <span className="text-sm font-bold text-green-500">+$12.00</span>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+
+                {/* Market Ticker */}
+                <Card className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Market Ticker</h2>
+                    <div className="space-y-4">
+                        {['BTC/USDT', 'ETH/USDT', 'SOL/USDT'].map((pair) => (
+                            <div key={pair} className="flex justify-between items-center">
+                                <span className="font-medium">{pair}</span>
+                                <span className="text-green-500 font-mono">$42,000.00</span>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
         </div>
     );
 }
