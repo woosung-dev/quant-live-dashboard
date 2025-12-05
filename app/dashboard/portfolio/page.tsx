@@ -1,6 +1,30 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 export default function PortfolioPage() {
+    const [balances, setBalances] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchBalances = async () => {
+            try {
+                const res = await fetch('/api/exchange/balance');
+                const data = await res.json();
+                if (data.balances) {
+                    setBalances(data.balances);
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchBalances();
+    }, []);
+
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold">Portfolio & Assets</h1>
@@ -15,30 +39,34 @@ export default function PortfolioPage() {
                 </Card>
 
                 {/* Exchange Balances */}
-                <Card className="p-6 h-80">
+                <Card className="p-6 min-h-80">
                     <h2 className="text-xl font-bold mb-4">Exchange Balances</h2>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-yellow-500 rounded-full"></div>
-                                <span className="font-bold">Binance</span>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-bold">$10,234.00</p>
-                                <p className="text-xs text-gray-500">2.1 BTC</p>
-                            </div>
+                    {loading ? (
+                        <div className="flex justify-center py-10">
+                            <Loader2 className="animate-spin" size={24} />
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
-                                <span className="font-bold">Upbit</span>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-bold">$5,120.00</p>
-                                <p className="text-xs text-gray-500">4,500,000 KRW</p>
-                            </div>
+                    ) : balances.length === 0 ? (
+                        <div className="text-center py-10 text-gray-500">
+                            No balances found. Connect an exchange in Settings.
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {balances.map((balance: any) => (
+                                <div key={balance.asset} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-[#F3BA2F] rounded-full flex items-center justify-center text-black font-bold text-xs">
+                                            {balance.asset[0]}
+                                        </div>
+                                        <span className="font-bold">{balance.asset}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold">{balance.total.toFixed(8)}</p>
+                                        <p className="text-xs text-gray-500">Available: {balance.free.toFixed(8)}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </Card>
             </div>
 

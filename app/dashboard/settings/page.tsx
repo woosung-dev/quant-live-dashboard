@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import { ExchangeManager } from '@/components/settings/ExchangeManager';
 
 export default function SettingsPage() {
     return (
@@ -7,22 +8,7 @@ export default function SettingsPage() {
 
             {/* API Keys */}
             <section>
-                <h2 className="text-xl font-bold mb-4">Exchange API Keys</h2>
-                <Card className="p-6 space-y-4">
-                    <div className="flex justify-between items-center border-b pb-4">
-                        <div>
-                            <h3 className="font-bold">Binance</h3>
-                            <p className="text-sm text-gray-500">Read & Trade permissions</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Connected</span>
-                            <button className="text-sm text-red-500 hover:underline">Remove</button>
-                        </div>
-                    </div>
-                    <button className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                        + Add New Exchange Key
-                    </button>
-                </Card>
+                <ExchangeManager />
             </section>
 
             {/* Notifications */}

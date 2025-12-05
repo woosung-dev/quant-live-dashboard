@@ -3,17 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { StrategyEditor } from '@/components/forms/StrategyEditor';
+import { StrategyEditor } from '@/components/dashboard/StrategyEditor';
 import { PriceChart } from '@/components/charts/PriceChart';
 import { ProfitDisplay } from '@/components/simulation/ProfitDisplay';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { calculateSimulation, runBacktest } from '@/lib/simulation';
+import { runCustomStrategy } from '@/lib/simulation';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StrategyDetailPage() {
     const { id } = useParams();
     const [strategy, setStrategy] = useState<any>(null);
+    const [code, setCode] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
     // Real-time data
@@ -22,11 +23,35 @@ export default function StrategyDetailPage() {
     const [prices, setPrices] = useState<number[]>([]);
     const [result, setResult] = useState<any>({ totalPnL: 0, winRate: 0, trades: 0 });
 
+    // Default Strategy Code Template
+    const defaultCode = `// Available variables: 
+// prices: number[] (history up to current point)
+// portfolio: { balance, position, entryPrice }
+// Return 'BUY', 'SELL', or null
+
+const fast = 9;
+const slow = 21;
+
+if (prices.length < slow) return;
+
+// Calculate SMA
+const fastMA = prices.slice(-fast).reduce((a,b) => a+b, 0) / fast;
+const slowMA = prices.slice(-slow).reduce((a,b) => a+b, 0) / slow;
+
+// Logic
+if (fastMA > slowMA) return 'BUY';
+if (fastMA < slowMA) return 'SELL';
+`;
+
     // Fetch Strategy
     useEffect(() => {
         const fetchStrategy = async () => {
             const { data } = await supabase.from('strategies').select('*').eq('id', id).single();
-            if (data) setStrategy(data);
+            if (data) {
+                setStrategy(data);
+                // If strategy has saved code, use it, otherwise use default
+                setCode(data.code || defaultCode);
+            }
             setLoading(false);
         };
         fetchStrategy();
@@ -59,32 +84,23 @@ export default function StrategyDetailPage() {
         }
     }, [price]);
 
-    // Run Simulation with Strategy Params
-    useEffect(() => {
-        if (prices.length > 0 && strategy) {
-            // Use the backward compatible wrapper or the new function if we had type info
-            // For now, since we only have SMA_CROSS in DB, we can stick to calculateSimulation
-            // or use runBacktest(prices, strategy.type, strategy.parameters)
-
-            // Let's try to use the new function if possible, but we need to import it.
-            // Since I didn't export runBacktest in the previous step (I did export it actually),
-            // let's update the import and usage.
-
-            // Actually, to avoid breaking changes without updating imports, I kept calculateSimulation.
-            // But let's verify if I can update the import.
-            const res = runBacktest(prices, strategy.type, strategy.parameters); // Changed to runBacktest
+    const handleRunBacktest = () => {
+        if (prices.length > 0 && code) {
+            const res = runCustomStrategy(prices, code);
             setResult(res);
         }
-    }, [prices, strategy]);
+    };
 
-    const handleSave = async (name: string, params: any) => {
+    const handleSave = async () => {
         const { error } = await supabase
             .from('strategies')
-            .update({ name, parameters: params, updated_at: new Date().toISOString() })
+            .update({ code, updated_at: new Date().toISOString() })
             .eq('id', id);
 
         if (!error) {
-            setStrategy({ ...strategy, name, parameters: params });
+            alert('Strategy saved!');
+        } else {
+            alert('Failed to save strategy');
         }
     };
 
@@ -93,14 +109,14 @@ export default function StrategyDetailPage() {
 
     return (
         <div className="space-y-6">
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-gray-400 hover:text-foreground transition-colors">
-                <ArrowLeft size={18} /> Back to Dashboard
+            <Link href="/dashboard/strategy" className="inline-flex items-center gap-2 text-gray-400 hover:text-foreground transition-colors">
+                <ArrowLeft size={18} /> Back to Strategies
             </Link>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid lg:grid-cols-3 gap-8 h-[calc(100vh-150px)]">
                 {/* Left: Chart & Stats */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-card border border-border rounded-xl p-6">
+                <div className="lg:col-span-2 space-y-6 flex flex-col">
+                    <div className="bg-card border border-border rounded-xl p-6 flex-1 flex flex-col">
                         <div className="flex justify-between items-center mb-4">
                             <h1 className="text-2xl font-bold">{strategy.name}</h1>
                             <div className="flex items-center gap-2 text-xs font-mono text-gray-500">
@@ -109,7 +125,7 @@ export default function StrategyDetailPage() {
                             </div>
                         </div>
 
-                        <div className="h-[400px] w-full relative">
+                        <div className="flex-1 w-full relative min-h-[300px]">
                             <PriceChart data={history} />
                         </div>
                     </div>
@@ -122,10 +138,11 @@ export default function StrategyDetailPage() {
                 </div>
 
                 {/* Right: Editor */}
-                <div>
+                <div className="h-full">
                     <StrategyEditor
-                        initialName={strategy.name}
-                        initialParams={strategy.parameters}
+                        code={code}
+                        onChange={(val) => setCode(val || '')}
+                        onRunBacktest={handleRunBacktest}
                         onSave={handleSave}
                     />
                 </div>

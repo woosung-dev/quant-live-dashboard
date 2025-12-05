@@ -1,8 +1,17 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function DashboardOverviewPage() {
+    const { prices, isConnected } = useWebSocket(['btcusdt', 'ethusdt', 'solusdt']);
+
+    const tickerItems = [
+        { symbol: 'BTC/USDT', key: 'btcusdt' },
+        { symbol: 'ETH/USDT', key: 'ethusdt' },
+        { symbol: 'SOL/USDT', key: 'solusdt' },
+    ];
+
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold">Dashboard Overview</h1>
@@ -54,12 +63,19 @@ export default function DashboardOverviewPage() {
 
                 {/* Market Ticker */}
                 <Card className="p-6">
-                    <h2 className="text-xl font-bold mb-4">Market Ticker</h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold">Market Ticker</h2>
+                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} title={isConnected ? 'Connected' : 'Disconnected'} />
+                    </div>
                     <div className="space-y-4">
-                        {['BTC/USDT', 'ETH/USDT', 'SOL/USDT'].map((pair) => (
-                            <div key={pair} className="flex justify-between items-center">
-                                <span className="font-medium">{pair}</span>
-                                <span className="text-green-500 font-mono">$42,000.00</span>
+                        {tickerItems.map((item) => (
+                            <div key={item.key} className="flex justify-between items-center">
+                                <span className="font-medium">{item.symbol}</span>
+                                <span className={`font-mono ${prices[item.key] ? 'text-foreground' : 'text-gray-500'}`}>
+                                    {prices[item.key]
+                                        ? `$${prices[item.key].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                        : 'Loading...'}
+                                </span>
                             </div>
                         ))}
                     </div>
