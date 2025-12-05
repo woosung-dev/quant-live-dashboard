@@ -21,6 +21,7 @@ create table public.strategies (
   user_id uuid references public.profiles(id) not null,
   name text not null,
   type text not null, -- 'SMA_CROSS', 'RSI', etc.
+  code text, -- Custom strategy code
   parameters jsonb not null default '{}'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
