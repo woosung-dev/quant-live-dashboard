@@ -62,6 +62,20 @@ export default function SignupPage() {
         }
     };
 
+    const handleKakaoSignup = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'kakao',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
     if (success) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -193,6 +207,16 @@ export default function SignupPage() {
                         />
                     </svg>
                     Google로 회원가입
+                </button>
+
+                <button
+                    onClick={handleKakaoSignup}
+                    className="w-full bg-[#FEE500] text-black font-bold py-3 rounded-lg hover:bg-[#FEE500]/90 transition-all flex items-center justify-center gap-2 mt-3"
+                >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3C6.48 3 2 6.48 2 10.77C2 13.49 3.83 15.88 6.63 17.19C6.43 17.93 5.91 19.87 5.8 20.27C5.67 20.75 5.98 20.74 6.18 20.61C6.43 20.45 9.09 18.66 10.25 17.87C10.82 17.95 11.4 17.99 12 17.99C17.52 17.99 22 14.51 22 10.22C22 5.94 17.52 3 12 3Z" />
+                    </svg>
+                    Kakao로 회원가입
                 </button>
 
                 <div className="mt-6 text-center text-sm text-gray-400">

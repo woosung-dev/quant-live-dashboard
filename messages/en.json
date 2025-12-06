@@ -1,0 +1,11 @@
+{
+    "HomePage": {
+        "title": "Quant Live Dashboard",
+        "about": "About"
+    },
+    "Theme": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+    }
+}

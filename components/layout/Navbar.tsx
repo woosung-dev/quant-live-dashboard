@@ -1,67 +1,93 @@
-'use client';
+"use client"
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { LogOut, LayoutDashboard, Plus } from 'lucide-react';
+import { useEffect, useState } from "react"
+import { Link, useRouter } from "@/i18n/routing"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
+import { useTranslations } from "next-intl"
+import { supabase } from "@/lib/supabase"
+import { User } from "@supabase/supabase-js"
 
-export const Navbar = () => {
-    const router = useRouter();
+export function Navbar() {
+    const t = useTranslations('HomePage')
+    const router = useRouter()
+    const [user, setUser] = useState<User | null>(null)
+
+    useEffect(() => {
+        // Check initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null)
+        })
+
+        // Subscribe to auth changes
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null)
+        })
+
+        return () => subscription.unsubscribe()
+    }, [])
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push('/login');
-    };
+        await supabase.auth.signOut()
+        router.push('/login')
+    }
 
     return (
-        <nav className="border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                <Link href="/dashboard" className="text-xl font-bold tracking-tighter">
-                    QUANT<span className="text-primary">.LIVE</span>
-                </Link>
-
-                <div className="flex items-center gap-6">
-                    <Link
-                        href="/dashboard"
-                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors flex items-center gap-2"
-                    >
-                        <LayoutDashboard size={18} />
-                        Overview
+        <nav className="border-b bg-background">
+            <div className="flex h-16 items-center px-4 container mx-auto">
+                <div className="mr-4 hidden md:flex">
+                    <Link href="/" className="mr-6 flex items-center space-x-2">
+                        <span className="hidden font-bold sm:inline-block">
+                            {t('title')}
+                        </span>
                     </Link>
-                    <Link
-                        href="/dashboard/strategy"
-                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
-                    >
-                        Strategy
-                    </Link>
-                    <Link
-                        href="/dashboard/live"
-                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
-                    >
-                        Live
-                    </Link>
-                    <Link
-                        href="/dashboard/portfolio"
-                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
-                    >
-                        Portfolio
-                    </Link>
-                    <Link
-                        href="/dashboard/settings"
-                        className="text-sm font-medium text-gray-400 hover:text-foreground transition-colors"
-                    >
-                        Settings
-                    </Link>
-
-                    <button
-                        onClick={handleLogout}
-                        className="text-sm font-medium text-gray-400 hover:text-red-500 transition-colors flex items-center gap-2"
-                    >
-                        <LogOut size={18} />
-                        Logout
-                    </button>
+                    <nav className="flex items-center space-x-6 text-sm font-medium">
+                        <Link
+                            href="/about"
+                            className="transition-colors hover:text-foreground/80 text-foreground/60"
+                        >
+                            {t('about')}
+                        </Link>
+                    </nav>
+                </div>
+                <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+                    <div className="w-full flex-1 md:w-auto md:flex-none">
+                        {/* Search component can go here */}
+                    </div>
+                    <nav className="flex items-center gap-2">
+                        <LanguageSwitcher />
+                        <ThemeToggle />
+                        {user ? (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium hidden md:inline-block">
+                                    {user.email?.split('@')[0]}
+                                </span>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleLogout}
+                                >
+                                    Logout
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                <Link href="/login">
+                                    <Button variant="ghost" size="sm">
+                                        Login
+                                    </Button>
+                                </Link>
+                                <Link href="/signup">
+                                    <Button size="sm">Sign Up</Button>
+                                </Link>
+                            </>
+                        )}
+                    </nav>
                 </div>
             </div>
         </nav>
-    );
-};
+    )
+}

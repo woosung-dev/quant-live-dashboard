@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Navbar } from '@/components/layout/Navbar';
+
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -37,7 +37,7 @@ export default function DashboardLayout({
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            <Navbar />
+
             <main className="max-w-7xl mx-auto px-4 py-8">
                 {children}
             </main>

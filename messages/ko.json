@@ -1,0 +1,11 @@
+{
+    "HomePage": {
+        "title": "퀀트 라이브 대시보드",
+        "about": "소개"
+    },
+    "Theme": {
+        "light": "라이트",
+        "dark": "다크",
+        "system": "시스템"
+    }
+}
