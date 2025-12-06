@@ -8,9 +8,6 @@
     "start": "next start",
     "lint": "eslint"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
