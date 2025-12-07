@@ -91,6 +91,8 @@ function runSmaCross(prices: number[], fastPeriod: number, slowPeriod: number): 
 function runRsiStrategy(prices: number[], period: number, overbought: number, oversold: number): SimulationResult {
     // Placeholder for RSI logic
     // For now, return empty result or implement basic RSI
+    // Prevent unused vars lint error
+    void prices; void period; void overbought; void oversold;
     return { totalPnL: 0, winRate: 0, trades: 0, equityCurve: [] };
 }
 
@@ -117,9 +119,9 @@ export function runCustomStrategy(prices: number[], code: string): SimulationRes
     // if (fastMA > slowMA) return 'BUY';
     // if (fastMA < slowMA) return 'SELL';
 
-    let strategyFn: Function;
+    let strategyFn: (...args: any[]) => any;
     try {
-        strategyFn = new Function('prices', 'portfolio', code);
+        strategyFn = new Function('prices', 'portfolio', code) as (...args: any[]) => any;
     } catch (e) {
         console.error("Failed to parse strategy code", e);
         return { totalPnL: 0, winRate: 0, trades: 0, equityCurve: [] };

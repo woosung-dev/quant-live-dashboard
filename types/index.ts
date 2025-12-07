@@ -19,3 +19,7 @@ export interface SimulationResult {
     trades: number;
     equityCurve: { time: number; value: number }[];
 }
+
+// Backtest 타입 re-export
+export * from './backtest';
+
