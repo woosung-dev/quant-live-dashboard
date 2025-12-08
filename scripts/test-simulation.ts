@@ -1,4 +1,4 @@
-import { calculateSimulation } from '../lib/simulation';
+import { calculateSimulation } from '../features/backtest/lib/simulation';
 
 const prices = [
     100, 101, 102, 103, 104, 105, 106, 107, 108, 109, // 0-9

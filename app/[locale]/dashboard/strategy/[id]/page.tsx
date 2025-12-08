@@ -7,7 +7,7 @@ import { StrategyEditor } from '@/components/dashboard/StrategyEditor';
 import { PriceChart } from '@/components/charts/PriceChart';
 import { ProfitDisplay } from '@/components/simulation/ProfitDisplay';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { runCustomStrategy } from '@/lib/simulation';
+import { runCustomStrategy } from '@/features/backtest/lib/simulation';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { PriceChart } from '@/components/charts/PriceChart';
 import { ProfitDisplay } from '@/components/simulation/ProfitDisplay';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { calculateSimulation } from '@/lib/simulation';
+import { calculateSimulation } from '@/features/backtest/lib/simulation';
 import { SimulationResult } from '@/types';
 import { ProblemSection } from '@/components/sections/ProblemSection';
 import { SolutionSection } from '@/components/sections/SolutionSection';

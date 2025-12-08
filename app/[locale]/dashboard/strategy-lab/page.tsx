@@ -12,16 +12,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { StrategySelector } from "@/components/backtest/StrategySelector";
-import { ParameterForm } from "@/components/backtest/ParameterForm";
-import { TimeframeSelector } from "@/components/backtest/TimeframeSelector";
-import { BacktestChart } from "@/components/backtest/BacktestChart";
-import { MetricsCards } from "@/components/backtest/MetricsCards";
+import { StrategySelector } from "@/features/backtest/components/StrategySelector";
+import { ParameterForm } from "@/features/backtest/components/ParameterForm";
+import { TimeframeSelector } from "@/features/backtest/components/TimeframeSelector";
+import { BacktestChart } from "@/features/backtest/components/BacktestChart";
+import { MetricsCards } from "@/features/backtest/components/MetricsCards";
 import {
     getStrategyById,
     defaultStrategy
-} from "@/lib/strategies";
-import { runBacktest } from "@/lib/backtest";
+} from "@/features/backtest/strategies";
+import { runBacktest } from "@/features/backtest/lib/engine";
 import {
     BacktestResult,
     BacktestConfig,

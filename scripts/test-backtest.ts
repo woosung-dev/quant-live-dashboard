@@ -1,7 +1,7 @@
 
-import { rsiDivergenceStrategy } from '../lib/strategies/rsi-divergence';
-import { runBacktest } from '../lib/backtest';
-import { BacktestConfig } from '../types/backtest';
+import { rsiDivergenceStrategy } from '../features/backtest/strategies/rsi-divergence';
+import { runBacktest } from '../features/backtest/lib/engine';
+import { BacktestConfig } from '../features/backtest/types';
 
 const config: BacktestConfig = {
     symbol: 'BTCUSDT',
