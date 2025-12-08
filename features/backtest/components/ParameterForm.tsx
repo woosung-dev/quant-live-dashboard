@@ -11,12 +11,11 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ParameterDefinition } from "@/types";
-import { useEffect, useState } from "react";
 
 interface ParameterFormProps {
     parameters: ParameterDefinition[];
-    values: Record<string, any>;
-    onChange: (values: Record<string, any>) => void;
+    values: Record<string, unknown>;
+    onChange: (values: Record<string, unknown>) => void;
     disabled?: boolean;
 }
 
@@ -26,7 +25,7 @@ export function ParameterForm({
     onChange,
     disabled,
 }: ParameterFormProps) {
-    const handleChange = (name: string, value: any) => {
+    const handleChange = (name: string, value: unknown) => {
         onChange({
             ...values,
             [name]: value,
@@ -54,7 +53,7 @@ export function ParameterForm({
                             <Input
                                 id={param.name}
                                 type="number"
-                                value={values[param.name] ?? param.defaultValue}
+                                value={(values[param.name] as string | number) ?? param.defaultValue}
                                 min={param.min}
                                 max={param.max}
                                 step={param.step || 1}
@@ -93,7 +92,7 @@ export function ParameterForm({
                         <div className="flex items-center gap-2">
                             <Switch
                                 id={param.name}
-                                checked={values[param.name] ?? param.defaultValue}
+                                checked={(values[param.name] as boolean) ?? param.defaultValue}
                                 onCheckedChange={(checked) => handleChange(param.name, checked)}
                                 disabled={disabled}
                             />

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { TIMEFRAME_LABELS, Timeframe, TIMEFRAME_MAP } from "@/types";
+import { TIMEFRAME_LABELS, Timeframe } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface TimeframeSelectorProps {

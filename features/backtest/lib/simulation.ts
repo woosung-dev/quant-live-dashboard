@@ -1,5 +1,31 @@
 import { SimulationResult } from '@/types';
 
+// Actually the local function is named runBacktest, creating conflict.
+// simulation.ts has 'export function runBacktest' which is the OLD one.
+// The wrapper 'calculateSimulation' calls 'runBacktest' (the local one).
+// Wait, the code says: return runBacktest(prices, 'SMA_CROSS', ...). That seems to call the local function.
+// So no external import needed for runBacktest?
+// Ah, checking line 19: return runBacktest(prices, 'SMA_CROSS', ...).
+// It calls the function defined at line 22 in the same file.
+// So simulation.ts is self-contained?
+// Let me check if it uses anything from lib/backtest.ts.
+// It seems it does NOT import from lib/backtest.ts in the original file I read.
+// Code: import { SimulationResult } from '@/types';
+// So checking line 1 of original content...
+// It only imports SimulationResult.
+// So simulation.ts is fine?
+// Wait, I saw "import ... from '@/lib/backtest'" in previous thought?
+// Let me double check file view of simulation.ts.
+// It has NO imports from lib/backtest.
+// So simulation.ts needs no changes except maybe strict types.
+// Wait, I see no imports from backtest in the view_file output (Step 216).
+// BUT, I should check if it needs to use the new engine. 
+// It seems simulation.ts is legacy code that implements SMA/RSI ad-hoc.
+// I will mostly leave it alone or update if it breaks.
+// Actually, `check line 1`: `import { SimulationResult } from '@/types';`
+// Seems fine.
+
+
 type StrategyType = 'SMA_CROSS' | 'RSI';
 
 interface StrategyParams {
@@ -121,6 +147,7 @@ export function runCustomStrategy(prices: number[], code: string): SimulationRes
 
     let strategyFn: (...args: any[]) => any;
     try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-implied-eval
         strategyFn = new Function('prices', 'portfolio', code) as (...args: any[]) => any;
     } catch (e) {
         console.error("Failed to parse strategy code", e);

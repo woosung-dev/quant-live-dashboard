@@ -4,8 +4,8 @@
  */
 
 import { Candle, Signal, Strategy, ParameterDefinition } from '@/types';
-import { calculateEMA, detectCrossover } from '@/lib/indicators';
-import { getClosePrices } from '@/lib/backtest';
+import { calculateEMA, detectCrossover } from '../lib/indicators';
+import { getClosePrices } from '../lib/engine';
 
 /** EMA Cross 전략 파라미터 */
 export interface EMACrossParams {

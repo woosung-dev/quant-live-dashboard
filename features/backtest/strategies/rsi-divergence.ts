@@ -4,8 +4,8 @@
  */
 
 import { Candle, Signal, Strategy, ParameterDefinition } from '@/types';
-import { calculateRSI } from '@/lib/indicators';
-import { getClosePrices } from '@/lib/backtest';
+import { calculateRSI } from '../lib/indicators';
+import { getClosePrices } from '../lib/engine';
 
 /** RSI 전략 파라미터 */
 export interface RSIDivergenceParams {

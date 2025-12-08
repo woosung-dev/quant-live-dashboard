@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { getStrategyOptions } from "@/lib/strategies";
+import { getStrategyOptions } from "../strategies";
 
 interface StrategySelectorProps {
     selectedStrategyId: string;

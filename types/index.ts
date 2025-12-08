@@ -21,5 +21,5 @@ export interface SimulationResult {
 }
 
 // Backtest 타입 re-export
-export * from './backtest';
+export * from '@/features/backtest/types';
 

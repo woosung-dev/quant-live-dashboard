@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { createChart, IChartApi, ISeriesApi, Time, CandlestickSeries } from "lightweight-charts";
-import { Candle, Signal } from "@/types";
+import { Candle, Signal, PerformanceMetrics } from "@/types";
 import { useTheme } from "next-themes";
 
 interface BacktestChartProps {
     candles: Candle[];
     signals: Signal[];
-    metrics?: any; // Optional metrics to display on chart if needed
+    metrics?: PerformanceMetrics; // Optional metrics to display on chart if needed
 }
 
 export function BacktestChart({ candles, signals }: BacktestChartProps) {
@@ -116,7 +116,7 @@ export function BacktestChart({ candles, signals }: BacktestChartProps) {
             // Actually lightweight-charts 3.8+ handles it, but let's be safe.
             // We will just try setting them.
 
-            // @ts-ignore - mismatch in expected types but compatible in practice for lightweight-charts 5.x
+            // @ts-expect-error - mismatch in expected types but compatible in practice for lightweight-charts 5.x
             candlestickSeriesRef.current.setMarkers(markers);
 
             // Fit content

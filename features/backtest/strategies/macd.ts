@@ -4,8 +4,8 @@
  */
 
 import { Candle, Signal, Strategy, ParameterDefinition } from '@/types';
-import { calculateMACD } from '@/lib/indicators';
-import { getClosePrices } from '@/lib/backtest';
+import { calculateMACD } from '../lib/indicators';
+import { getClosePrices } from '../lib/engine';
 
 /** MACD 전략 파라미터 */
 export interface MACDStrategyParams {
