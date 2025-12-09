@@ -58,13 +58,19 @@ export interface ParameterDefinition {
     options?: { label: string; value: string }[];
 }
 
+/** 전략 실행 결과 */
+export interface StrategyResult {
+    signals: Signal[];
+    indicators?: Record<string, number[]>;
+}
+
 /** 전략 인터페이스 */
 export interface Strategy {
     id: string;
     name: string;
     description: string;
     parameters: ParameterDefinition[];
-    execute: (candles: Candle[], params: Record<string, unknown>) => Signal[];
+    execute: (candles: Candle[], params: Record<string, unknown>) => StrategyResult;
 }
 
 /** 캔들 데이터 */
@@ -134,6 +140,7 @@ export interface BacktestResult {
     strategy: Strategy;
     candles: Candle[];
     signals: Signal[];
+    indicators?: Record<string, number[]>; // Added field
     trades: Trade[];
     equityCurve: EquityPoint[];
     metrics: PerformanceMetrics;
