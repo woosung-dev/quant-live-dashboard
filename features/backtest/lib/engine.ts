@@ -289,7 +289,7 @@ export async function runBacktest(
     );
 
     // 2. 전략 실행하여 시그널 생성
-    const signals = strategy.execute(candles, params);
+    const { signals, indicators } = strategy.execute(candles, params);
 
     // 3. 시그널 기반으로 거래 시뮬레이션
     const { trades, equityCurve } = simulateTrades(
@@ -308,6 +308,7 @@ export async function runBacktest(
         strategy,
         candles,
         signals,
+        indicators,
         trades,
         equityCurve,
         metrics,

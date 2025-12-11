@@ -7,12 +7,14 @@ import { Strategy } from '@/types';
 import { rsiDivergenceStrategy } from './rsi-divergence';
 import { emaCrossStrategy } from './ema-cross';
 import { macdStrategy } from './macd';
+import { pineStrategy } from './pine';
 
 /** 사용 가능한 모든 전략 목록 */
 export const strategies: Strategy[] = [
     rsiDivergenceStrategy,
     emaCrossStrategy,
     macdStrategy,
+    pineStrategy,
 ];
 
 /** 전략 ID로 전략 찾기 */

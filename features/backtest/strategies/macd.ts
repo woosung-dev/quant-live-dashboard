@@ -1,125 +1,94 @@
-/**
- * MACD 전략
- * @description MACD 시그널 크로스 기반 매매 전략
- */
-
-import { Candle, Signal, Strategy, ParameterDefinition } from '@/types';
+import { Strategy, Candle, Signal, ParameterDefinition, StrategyResult } from '@/types';
 import { calculateMACD } from '../lib/indicators';
 import { getClosePrices } from '../lib/engine';
 
-/** MACD 전략 파라미터 */
-export interface MACDStrategyParams {
-    fastPeriod: number;
-    slowPeriod: number;
-    signalPeriod: number;
-}
-
-/** 기본 파라미터 */
-const DEFAULT_PARAMS: MACDStrategyParams = {
-    fastPeriod: 12,
-    slowPeriod: 26,
-    signalPeriod: 9,
-};
-
-/** 파라미터 정의 (UI용) */
-const parameterDefinitions: ParameterDefinition[] = [
+const parameters: ParameterDefinition[] = [
     {
         name: 'fastPeriod',
-        label: 'Fast EMA 기간',
+        label: 'Fast Period',
         type: 'number',
         defaultValue: 12,
         min: 2,
-        max: 50,
-        step: 1,
+        max: 50
     },
     {
         name: 'slowPeriod',
-        label: 'Slow EMA 기간',
+        label: 'Slow Period',
         type: 'number',
         defaultValue: 26,
-        min: 10,
-        max: 100,
-        step: 1,
+        min: 5,
+        max: 200
     },
     {
         name: 'signalPeriod',
-        label: 'Signal 기간',
+        label: 'Signal Period',
         type: 'number',
         defaultValue: 9,
         min: 2,
-        max: 50,
-        step: 1,
-    },
+        max: 50
+    }
 ];
 
-/**
- * MACD 시그널 생성
- * - MACD 라인이 시그널 라인을 상향 돌파 → 매수
- * - MACD 라인이 시그널 라인을 하향 돌파 → 매도
- */
-function execute(candles: Candle[], params: Record<string, unknown>): Signal[] {
-    const { fastPeriod, slowPeriod, signalPeriod } = {
-        ...DEFAULT_PARAMS,
-        ...params,
-    } as MACDStrategyParams;
+function execute(candles: Candle[], params: Record<string, any>): StrategyResult {
+    const prices = getClosePrices(candles);
+    const fastPeriod = Number(params.fastPeriod) || 12;
+    const slowPeriod = Number(params.slowPeriod) || 26;
+    const signalPeriod = Number(params.signalPeriod) || 9;
 
-    // 파라미터 검증
-    if (fastPeriod >= slowPeriod) {
-        console.warn('Fast 기간이 Slow 기간보다 작아야 합니다.');
-        return [];
-    }
+    // Calculate MACD
+    const macdResults = calculateMACD(prices, fastPeriod, slowPeriod, signalPeriod);
 
     const signals: Signal[] = [];
-    const closePrices = getClosePrices(candles);
-    const macdValues = calculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod);
+    const startIndex = Math.max(fastPeriod, slowPeriod) + signalPeriod;
 
-    for (let i = 1; i < candles.length; i++) {
-        const prevMACD = macdValues[i - 1];
-        const currMACD = macdValues[i];
+    for (let i = startIndex; i < candles.length; i++) {
+        // Current values
+        const currMACD = macdResults[i].MACD;
+        const currSignal = macdResults[i].signal;
 
-        // MACD 값이 없으면 스킵
-        if (
-            prevMACD?.MACD === undefined ||
-            prevMACD?.signal === undefined ||
-            currMACD?.MACD === undefined ||
-            currMACD?.signal === undefined
-        ) {
+        // Previous values
+        const prevMACD = macdResults[i - 1].MACD;
+        const prevSignal = macdResults[i - 1].signal;
+
+        if (currMACD === undefined || currSignal === undefined ||
+            prevMACD === undefined || prevSignal === undefined) {
             continue;
         }
 
-        const prevDiff = prevMACD.MACD - prevMACD.signal;
-        const currDiff = currMACD.MACD - currMACD.signal;
-
-        // MACD가 시그널을 상향 돌파 (매수)
-        if (prevDiff <= 0 && currDiff > 0) {
+        // MACD Crosses Signal Up (Bullish)
+        if (prevMACD <= prevSignal && currMACD > currSignal) {
             signals.push({
                 time: candles[i].time,
                 type: 'buy',
                 price: candles[i].close,
-                reason: `MACD 상향 돌파: MACD(${currMACD.MACD.toFixed(2)}) > Signal(${currMACD.signal.toFixed(2)})`,
+                reason: `MACD > Signal`
             });
         }
-        // MACD가 시그널을 하향 돌파 (매도)
-        else if (prevDiff >= 0 && currDiff < 0) {
+        // MACD Crosses Signal Down (Bearish)
+        else if (prevMACD >= prevSignal && currMACD < currSignal) {
             signals.push({
                 time: candles[i].time,
                 type: 'sell',
                 price: candles[i].close,
-                reason: `MACD 하향 돌파: MACD(${currMACD.MACD.toFixed(2)}) < Signal(${currMACD.signal.toFixed(2)})`,
+                reason: `MACD < Signal`
             });
         }
     }
 
-    return signals;
+    return {
+        signals,
+        indicators: {
+            macdLine: macdResults.map(m => m.MACD || 0),
+            signalLine: macdResults.map(m => m.signal || 0),
+            histogram: macdResults.map(m => m.histogram || 0)
+        }
+    };
 }
 
-/** MACD 전략 객체 */
 export const macdStrategy: Strategy = {
     id: 'macd',
     name: 'MACD',
-    description: 'MACD(Moving Average Convergence Divergence) 시그널 크로스 전략. MACD 라인이 시그널 라인을 상향 돌파하면 매수, 하향 돌파하면 매도합니다.',
-    parameters: parameterDefinitions,
-    execute,
+    description: 'Moving Average Convergence Divergence Strategy',
+    parameters,
+    execute
 };
-
-export default macdStrategy;

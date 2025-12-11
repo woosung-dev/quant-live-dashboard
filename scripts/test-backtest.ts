@@ -1,31 +1,40 @@
-
-import { rsiDivergenceStrategy } from '../features/backtest/strategies/rsi-divergence';
+import { BacktestConfig } from '../types';
 import { runBacktest } from '../features/backtest/lib/engine';
-import { BacktestConfig } from '../features/backtest/types';
-
-const config: BacktestConfig = {
-    symbol: 'BTCUSDT',
-    timeframe: '1d',
-    initialCapital: 10000,
-    limit: 100,
-    // Add dummy dates if needed, or let runBacktest handle it
-};
+import { strategies } from '../features/backtest/strategies';
 
 async function main() {
-    console.log("Starting backtest...");
-    try {
-        const result = await runBacktest(config, rsiDivergenceStrategy, {
-            period: 14,
-            overbought: 70,
-            oversold: 30
+    console.log('🚀 Starting Backtest Engine Test...');
+
+    const config: BacktestConfig = {
+        symbol: 'BTCUSDT',
+        timeframe: '1d',
+        limit: 500,
+        initialCapital: 10000
+    };
+
+    for (const strategy of strategies) {
+        console.log(`\nTesting Strategy: ${strategy.name} (${strategy.id})`);
+
+        const params: Record<string, any> = {};
+        strategy.parameters.forEach(p => {
+            params[p.name] = p.defaultValue;
         });
-        console.log("Backtest Success!");
-        console.log("Trades:", result.trades.length);
-        console.log("Net Profit:", result.metrics.netProfit);
-        console.log("Candles:", result.candles.length);
-    } catch (e) {
-        console.error("Backtest Failed:", e);
+
+        const startTime = performance.now();
+        const result = await runBacktest(config, strategy, params);
+        const endTime = performance.now();
+
+        console.log(`✅ ${strategy.name} Completed in ${(endTime - startTime).toFixed(2)}ms`);
+        console.log('-----------------------------------');
+        console.log(`Candles: ${result.candles.length}`);
+        console.log(`Trades: ${result.trades.length}`);
+        console.log(`Win Rate: ${result.metrics.winRate.toFixed(2)}%`);
+        console.log(`Net Profit: $${result.metrics.netProfit.toFixed(2)} (${result.metrics.netProfitPercent.toFixed(2)}%)`);
+
+        if (result.trades.length > 0) {
+            console.log('Last Trade:', result.trades[result.trades.length - 1]);
+        }
     }
 }
 
-main();
+main().catch(console.error);
