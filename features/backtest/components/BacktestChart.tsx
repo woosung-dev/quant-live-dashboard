@@ -1,20 +1,34 @@
+```typescript
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, IChartApi, ISeriesApi, Time, CandlestickSeries } from "lightweight-charts";
+import { createChart, ColorType, IChartApi, ISeriesApi, LineStyle, LineWidth } from 'lightweight-charts';
 import { Candle, Signal, PerformanceMetrics } from "@/types";
 import { useTheme } from "next-themes";
+
+interface LineData {
+    time: number;
+    value: number;
+}
+
+export interface OverlayLine {
+    data: LineData[];
+    color: string;
+    lineWidth?: number;
+}
 
 interface BacktestChartProps {
     candles: Candle[];
     signals: Signal[];
-    metrics?: PerformanceMetrics; // Optional metrics to display on chart if needed
+    overlays?: OverlayLine[];
+    metrics?: PerformanceMetrics;
 }
 
-export function BacktestChart({ candles, signals }: BacktestChartProps) {
+export function BacktestChart({ candles, signals, overlays }: BacktestChartProps) {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+    const lineSeriesRefs = useRef<ISeriesApi<"Line">[]>([]);
 
     const { theme } = useTheme();
     const isDark = theme === "dark";
@@ -37,11 +51,14 @@ export function BacktestChart({ candles, signals }: BacktestChartProps) {
                 timeVisible: true,
                 secondsVisible: false,
             },
+            rightPriceScale: {
+                borderColor: isDark ? "#27272A" : "#E5E7EB",
+            },
         });
 
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
-            upColor: "#10B981", // Emerald 500
-            downColor: "#EF4444", // Red 500
+            upColor: "#10B981",
+            downColor: "#EF4444",
             borderVisible: false,
             wickUpColor: "#10B981",
             wickDownColor: "#EF4444",
@@ -62,14 +79,18 @@ export function BacktestChart({ candles, signals }: BacktestChartProps) {
             window.removeEventListener("resize", handleResize);
             chart.remove();
         };
+
     }, [isDark]);
 
     useEffect(() => {
         if (!candlestickSeriesRef.current || candles.length === 0) return;
 
         try {
-            // Validation and Logging
-            console.log("BacktestChart: Processing candles", candles.length);
+            // Clean up previous overlay series
+            if (chartRef.current) {
+                lineSeriesRefs.current.forEach(series => chartRef.current?.removeSeries(series));
+                lineSeriesRefs.current = [];
+            }
 
             // Convert candles to lightweight-charts format
             const data = candles
@@ -81,9 +102,9 @@ export function BacktestChart({ candles, signals }: BacktestChartProps) {
                     low: c.low,
                     close: c.close,
                 }))
-                .sort((a, b) => (a.time as number) - (b.time as number)); // Ensure sorted
+                .sort((a, b) => (a.time as number) - (b.time as number));
 
-            // De-duplicate (lightweight-charts throws on duplicates)
+            // De-duplicate 
             const uniqueData: typeof data = [];
             let lastTime: number | null = null;
             for (const item of data) {
@@ -93,33 +114,54 @@ export function BacktestChart({ candles, signals }: BacktestChartProps) {
                 lastTime = currentTime;
             }
 
-            if (uniqueData.length === 0) {
-                console.warn("BacktestChart: No valid data to render");
-                return;
-            }
+            if (uniqueData.length === 0) return;
 
             candlestickSeriesRef.current.setData(uniqueData);
+
+            // Render Overlays
+            if (overlays && chartRef.current) {
+                overlays.forEach(overlay => {
+                    const lineSeries = chartRef.current!.addSeries(LineSeries, {
+                        color: overlay.color,
+                        lineWidth: (overlay.lineWidth || 2) as LineWidth,
+                        priceFormat: { type: 'price' },
+                        crosshairMarkerVisible: false,
+                    });
+
+                    const validOverlayData = overlay.data
+                        .filter(d => d.time && !isNaN(d.value))
+                        .map(d => ({ time: d.time as Time, value: d.value }))
+                        .sort((a, b) => (a.time as number) - (b.time as number));
+
+                    const uniqueOverlay: typeof validOverlayData = [];
+                    let lastOTime: number | null = null;
+                    for (const item of validOverlayData) {
+                        const t = item.time as number;
+                        if (lastOTime === t) continue;
+                        uniqueOverlay.push(item);
+                        lastOTime = t;
+                    }
+
+                    lineSeries.setData(uniqueOverlay);
+                    lineSeriesRefs.current.push(lineSeries);
+                });
+            }
 
             // Set markers for signals
             const markers = signals
                 .filter(s => s.time && s.price)
                 .map((s) => ({
                     time: s.time as Time,
-                    position: (s.type === "buy" ? "belowBar" : "aboveBar") as "belowBar" | "aboveBar" | "inBar",
+                    position: (s.type === "buy" ? "belowBar" : "aboveBar") as "belowBar" | "aboveBar",
                     color: s.type === "buy" ? "#10B981" : "#EF4444",
-                    shape: (s.type === "buy" ? "arrowUp" : "arrowDown") as "arrowUp" | "arrowDown" | "circle" | "square",
+                    shape: (s.type === "buy" ? "arrowUp" : "arrowDown") as "arrowUp" | "arrowDown",
                     text: s.type.toUpperCase(),
                     size: 1
                 }));
 
-            // Filter out markers with times not in candle data (chart crashes if marker time not in series?)
-            // Actually lightweight-charts 3.8+ handles it, but let's be safe.
-            // We will just try setting them.
-
-            // @ts-expect-error - mismatch in expected types but compatible in practice for lightweight-charts 5.x
+            // @ts-expect-error - marker types mismatch fix
             candlestickSeriesRef.current.setMarkers(markers);
 
-            // Fit content
             if (chartRef.current) {
                 chartRef.current.timeScale().fitContent();
             }
@@ -127,7 +169,7 @@ export function BacktestChart({ candles, signals }: BacktestChartProps) {
             console.error("BacktestChart: Error updating chart data", e);
         }
 
-    }, [candles, signals]);
+    }, [candles, signals, overlays]);
 
     return (
         <div className="w-full h-[400px] border rounded-lg overflow-hidden bg-background">
