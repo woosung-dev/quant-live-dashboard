@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navbar } from "@/components/layout/Navbar"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css";
 import type { Metadata } from "next";
 
@@ -50,6 +51,7 @@ export default async function LocaleLayout({
           >
             <Navbar />
             {children}
+            <Toaster />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
