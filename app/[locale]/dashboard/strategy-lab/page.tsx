@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Select,
     SelectContent,
@@ -22,11 +24,14 @@ import { IndicatorChart } from "@/features/backtest/components/IndicatorChart";
 import { MetricsCards } from "@/features/backtest/components/MetricsCards";
 import { ResultTabs } from "@/features/backtest/components/ResultTabs";
 import { TradeLogTable } from "@/features/backtest/components/TradeLogTable";
+import { AlertSettings } from "@/features/backtest/components/AlertSettings";
 import {
     getStrategyById,
     defaultStrategy
 } from "@/features/backtest/strategies";
 import { runBacktest } from "@/features/backtest/lib/engine";
+import { RealtimeRunner, RealtimeState } from "@/features/backtest/lib/realtime/runner";
+import { AlertConfig } from "@/features/backtest/lib/realtime/notification";
 import {
     BacktestResult,
     BacktestConfig,
@@ -64,10 +69,17 @@ export default function StrategyLabPage() {
     const [selectedStrategyId, setSelectedStrategyId] = useState<string>(defaultStrategy.id);
     const [strategyParams, setStrategyParams] = useState<Record<string, any>>({});
 
+    // Alert State
+    const [alertConfig, setAlertConfig] = useState<AlertConfig>({ type: 'webhook', url: '' });
+
     // Result State
     const [isRunning, setIsRunning] = useState(false);
     const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    // Real-time State
+    const realtimeRunner = useRef<RealtimeRunner | null>(null);
+    const [realtimeState, setRealtimeState] = useState<RealtimeState | null>(null);
 
     // Derived State
     const selectedStrategy = getStrategyById(selectedStrategyId);
@@ -82,6 +94,15 @@ export default function StrategyLabPage() {
             setStrategyParams(initialParams);
         }
     }, [selectedStrategyId]);
+
+    // Cleanup runner on unmount
+    useEffect(() => {
+        return () => {
+            if (realtimeRunner.current) {
+                realtimeRunner.current.stop();
+            }
+        };
+    }, []);
 
     const handleRunBacktest = async () => {
         if (!selectedStrategy) return;
@@ -105,6 +126,28 @@ export default function StrategyLabPage() {
         } finally {
             setIsRunning(false);
         }
+    };
+
+    const toggleRealtime = () => {
+        if (realtimeState?.status === 'running') {
+            realtimeRunner.current?.stop();
+            return;
+        }
+
+        if (!selectedStrategy) return;
+
+        if (!realtimeRunner.current) {
+            realtimeRunner.current = new RealtimeRunner((state) => {
+                setRealtimeState(state);
+            });
+        }
+
+        realtimeRunner.current.start(
+            { symbol, timeframe, initialCapital: 0 }, // Capital not used for alerts
+            selectedStrategy,
+            strategyParams,
+            alertConfig.url ? alertConfig : undefined
+        );
     };
 
     // Prepare Overlays (EMA Cross)
@@ -160,11 +203,20 @@ export default function StrategyLabPage() {
         <div className="container mx-auto p-4 space-y-6 max-w-7xl">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Strategy Lab</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-3xl font-bold tracking-tight">Strategy Lab</h1>
+                        {realtimeState?.status === 'running' && (
+                            <Badge variant="destructive" className="animate-pulse">LIVE</Badge>
+                        )}
+                    </div>
                     <p className="text-muted-foreground">
                         전략을 만들고 테스트하여 시장을 이기는 알파를 찾으세요.
                     </p>
                 </div>
+                <AlertSettings
+                    onSave={setAlertConfig}
+                    defaultConfig={alertConfig}
+                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -216,24 +268,46 @@ export default function StrategyLabPage() {
                             </div>
                         )}
 
-                        <Button
-                            className="w-full"
-                            size="lg"
-                            onClick={handleRunBacktest}
-                            disabled={isRunning || !selectedStrategy}
-                        >
-                            {isRunning ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    실행 중...
-                                </>
-                            ) : (
-                                <>
-                                    <Play className="mr-2 h-4 w-4 fill-current" />
-                                    백테스트 실행
-                                </>
-                            )}
-                        </Button>
+                        <div className="grid grid-cols-2 gap-2 mt-4">
+                            <Button
+                                className="w-full"
+                                size="lg"
+                                onClick={handleRunBacktest}
+                                disabled={isRunning || !selectedStrategy}
+                            >
+                                {isRunning ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        실행 중...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play className="mr-2 h-4 w-4 fill-current" />
+                                        백테스트
+                                    </>
+                                )}
+                            </Button>
+
+                            <Button
+                                className="w-full"
+                                size="lg"
+                                variant={realtimeState?.status === 'running' ? "destructive" : "secondary"}
+                                onClick={toggleRealtime}
+                                disabled={!selectedStrategy}
+                            >
+                                {realtimeState?.status === 'running' ? "중지 (Stop)" : "실전 활성화 (Activate)"}
+                            </Button>
+                        </div>
+
+                        {realtimeState && (
+                            <div className="mt-4 border rounded p-2 bg-black/80 font-mono text-xs h-32 overflow-hidden">
+                                <ScrollArea className="h-full">
+                                    {realtimeState.logs.map((log, i) => (
+                                        <div key={i} className="text-green-400 border-b border-green-900/30 pb-1 mb-1">{log}</div>
+                                    ))}
+                                </ScrollArea>
+                            </div>
+                        )}
 
                         {error && (
                             <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded">
