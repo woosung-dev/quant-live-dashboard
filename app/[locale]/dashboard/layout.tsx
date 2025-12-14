@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 import { Loader2 } from 'lucide-react';
+import { AppSidebar } from '@/components/layout/AppSidebar';
 
 export default function DashboardLayout({
     children,
@@ -36,10 +37,20 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="flex min-h-screen bg-background text-foreground">
+            {/* Sidebar - Hidden on mobile by default, handled by CSS/State usually, 
+                 but for checking "page routing" we just render it. 
+                 Ideally use a Mobile Sheet for small screens, but Sidebar for desktop. */}
+            <div className="hidden md:block">
+                <AppSidebar />
+            </div>
 
-            <main className="max-w-7xl mx-auto px-4 py-8">
-                {children}
+            {/* Mobile Nav could be here */}
+
+            <main className="flex-1 max-w-full overflow-hidden">
+                <div className="h-full px-4 py-8 md:px-8">
+                    {children}
+                </div>
             </main>
         </div>
     );
