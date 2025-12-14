@@ -2,7 +2,7 @@
 import { BacktestConfig, Signal, Strategy, Candle } from "@/types";
 import { fetchCandles } from "../engine";
 import { runPineScript } from "../pine/runner";
-import { AlertConfig, sendWebhookAlert } from "./notification";
+import { AlertConfig, sendAlert } from "./notification";
 
 export interface RealtimeConfig extends BacktestConfig {
     intervalSeconds?: number;
@@ -36,7 +36,7 @@ export class RealtimeRunner {
     private onUpdate: ((state: RealtimeState) => void) | null = null;
 
     constructor(onUpdate?: (state: RealtimeState) => void) {
-        this.onUpdate = onUpdate;
+        this.onUpdate = onUpdate || null;
     }
 
     public start(
@@ -129,9 +129,10 @@ export class RealtimeRunner {
                     this.state.lastSignalTime = lastSignal.time;
                     this.log(`New Signal: ${lastSignal.type.toUpperCase()} @ ${lastSignal.price}`);
 
+
                     // Send Alert
                     if (this.alertConfig) {
-                        await sendWebhookAlert(this.alertConfig, {
+                        await sendAlert(this.alertConfig, {
                             strategyName: this.strategy.name,
                             symbol: this.config.symbol,
                             timeframe: this.config.timeframe,
@@ -139,8 +140,9 @@ export class RealtimeRunner {
                             price: lastSignal.price,
                             time: lastSignal.time
                         });
-                        this.log(`Alert sent to webhook.`);
+                        this.log(`Alert sent.`);
                     }
+
                 }
             }
 

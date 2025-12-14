@@ -2,6 +2,7 @@
 export interface AlertConfig {
     type: 'webhook';
     url: string;
+    enableBrowser?: boolean;
     messageTemplate?: string; // e.g. "Signal {{type}} at {{price}}"
 }
 
@@ -13,6 +14,43 @@ export interface AlertPayload {
     price: number;
     time: number;
     message?: string;
+}
+
+/**
+ * Sends a browser notification
+ */
+export async function sendBrowserNotification(title: string, body: string) {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body });
+    } else if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            new Notification(title, { body });
+        }
+    }
+}
+
+/**
+ * Sends alerts based on config
+ */
+export async function sendAlert(config: AlertConfig, payload: AlertPayload): Promise<void> {
+    const promises = [];
+
+    // Browser Notification
+    if (config.enableBrowser) {
+        const title = `${payload.symbol} ${payload.type.toUpperCase()}`;
+        const body = `Price: ${payload.price} | Strategy: ${payload.strategyName}`;
+        promises.push(sendBrowserNotification(title, body));
+    }
+
+    // Webhook Notification
+    if (config.url) {
+        promises.push(sendWebhookAlert(config, payload));
+    }
+
+    await Promise.allSettled(promises);
 }
 
 /**

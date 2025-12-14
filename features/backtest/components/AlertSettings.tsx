@@ -1,119 +1,132 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Bell, TestTube } from "lucide-react";
-import { AlertConfig, sendWebhookAlert } from "../lib/realtime/notification";
-import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Bell, Webhook, Save } from 'lucide-react';
+import { AlertConfig, sendBrowserNotification } from '@/features/backtest/lib/realtime/notification';
+import { toast } from 'sonner';
+
+const STORAGE_KEY = 'quant_live_notification_config';
 
 interface AlertSettingsProps {
-    onSave: (config: AlertConfig) => void;
     defaultConfig?: AlertConfig;
+    onSave?: (config: AlertConfig) => void;
 }
 
-export function AlertSettings({ onSave, defaultConfig }: AlertSettingsProps) {
-    const [open, setOpen] = useState(false);
-    const [webhookUrl, setWebhookUrl] = useState(defaultConfig?.url || "");
-    const [isLoading, setIsLoading] = useState(false);
-    const { toast } = useToast();
+export function AlertSettings({ defaultConfig, onSave }: AlertSettingsProps = {}) {
+    const [config, setConfig] = useState<AlertConfig>({
+        type: 'webhook',
+        url: '',
+        enableBrowser: false,
+        ...defaultConfig
+    });
+
+    useEffect(() => {
+        // Load local storage if no default config or just to sync
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                setConfig(prev => ({ ...prev, ...parsed }));
+                if (onSave) onSave({ ...config, ...parsed }); // Notify parent of loaded config
+            } catch (e) {
+                console.error('Failed to parse notification config', e);
+            }
+        }
+    }, []);
 
     const handleSave = () => {
-        if (!webhookUrl) return;
-        onSave({
-            type: "webhook",
-            url: webhookUrl,
-        });
-        setOpen(false);
-    };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 
-    const handleTest = async () => {
-        if (!webhookUrl) return;
-        setIsLoading(true);
-        try {
-            const success = await sendWebhookAlert(
-                { type: "webhook", url: webhookUrl },
-                {
-                    strategyName: "Test Strategy",
-                    symbol: "BTCUSDT",
-                    timeframe: "1m",
-                    type: "buy",
-                    price: 99999,
-                    time: Date.now(),
-                }
-            );
+        if (onSave) {
+            onSave(config);
+        }
 
-            if (success) {
-                toast({
-                    title: "Test Alert Sent",
-                    description: "Please check your webhook destination.",
-                });
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Test Failed",
-                    description: "Could not send webhook. Check URL and CORS.",
+        toast.success('Settings saved successfully');
+
+        // Test notification permission if enabled
+        if (config.enableBrowser) {
+            if ('Notification' in window) {
+                Notification.requestPermission().then((permission) => {
+                    if (permission !== 'granted') {
+                        toast.warning('Browser notifications are not permitted by the system');
+                    }
                 });
             }
-        } catch (e) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "An unexpected error occurred.",
-            });
-        } finally {
-            setIsLoading(false);
         }
     };
 
+    const testNotification = async () => {
+        if (config.enableBrowser) {
+            await sendBrowserNotification('Test Notification', 'This is a test notification from Quant Live.');
+        }
+        toast.info('Test alert triggered (check browser/webhook)');
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                    <Bell className="h-4 w-4" />
-                    Alerts
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Alert Settings</DialogTitle>
-                    <DialogDescription>
-                        Configure webhook URL to receive real-time trading signals.
-                        Supports Slack, Discord, and generic webhooks.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="webhook" className="text-right">
-                            Webhook URL
-                        </Label>
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Notification Settings
+                </CardTitle>
+                <CardDescription>
+                    Configure how you want to be alerted when trading signals occur.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {/* Browser Notifications */}
+                <div className="flex items-center justify-between space-x-2">
+                    <div className="space-y-0.5">
+                        <Label className="text-base">Browser Notifications</Label>
+                        <p className="text-sm text-muted-foreground">
+                            Receive alerts directly in your browser while the tab is open.
+                        </p>
+                    </div>
+                    <Switch
+                        checked={config.enableBrowser || false}
+                        onCheckedChange={(checked) => setConfig({ ...config, enableBrowser: checked })}
+                    />
+                </div>
+
+                {/* Webhook Notifications */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between space-x-2">
+                        <div className="space-y-0.5">
+                            <Label className="text-base flex items-center gap-2">
+                                <Webhook className="w-4 h-4" /> Webhook Integration
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                                Send alerts to Discord, Slack, or any custom webhook URL.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="ml-1 pl-4 border-l-2 border-muted space-y-2">
+                        <Label htmlFor="webhook-url">Webhook URL</Label>
                         <Input
-                            id="webhook"
-                            value={webhookUrl}
-                            onChange={(e) => setWebhookUrl(e.target.value)}
-                            placeholder="https://hooks.slack.com/..."
-                            className="col-span-3"
+                            id="webhook-url"
+                            placeholder="https://discord.com/api/webhooks/..."
+                            value={config.url}
+                            onChange={(e) => setConfig({ ...config, url: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">Leave empty to disable webhook alerts.</p>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button type="button" variant="secondary" onClick={handleTest} disabled={!webhookUrl || isLoading}>
-                        <TestTube className="mr-2 h-4 w-4" />
-                        Test
+
+                <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" onClick={testNotification}>
+                        Test Alert
                     </Button>
-                    <Button type="submit" onClick={handleSave}>Save changes</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <Button onClick={handleSave} className="gap-2">
+                        <Save className="w-4 h-4" /> Save Settings
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
