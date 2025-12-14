@@ -1,8 +1,8 @@
-```typescript
+
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, ColorType, IChartApi, ISeriesApi, LineStyle, LineWidth } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, ISeriesApi, LineStyle, LineWidth, CandlestickSeries, LineSeries, Time, createSeriesMarkers } from 'lightweight-charts';
 import { Candle, Signal, PerformanceMetrics } from "@/types";
 import { useTheme } from "next-themes";
 
@@ -78,6 +78,9 @@ export function BacktestChart({ candles, signals, overlays }: BacktestChartProps
         return () => {
             window.removeEventListener("resize", handleResize);
             chart.remove();
+            chartRef.current = null;
+            candlestickSeriesRef.current = null;
+            lineSeriesRefs.current = [];
         };
 
     }, [isDark]);
@@ -159,8 +162,8 @@ export function BacktestChart({ candles, signals, overlays }: BacktestChartProps
                     size: 1
                 }));
 
-            // @ts-expect-error - marker types mismatch fix
-            candlestickSeriesRef.current.setMarkers(markers);
+            // Use createSeriesMarkers per v5 API
+            createSeriesMarkers(candlestickSeriesRef.current, markers);
 
             if (chartRef.current) {
                 chartRef.current.timeScale().fitContent();

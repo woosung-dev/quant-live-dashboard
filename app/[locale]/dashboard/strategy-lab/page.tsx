@@ -255,7 +255,7 @@ export default function StrategyLabPage() {
 
                                 {selectedStrategy.id === 'pine-script' ? (
                                     <PineEditor
-                                        value={strategyParams.code || selectedStrategy.parameters[0].defaultValue}
+                                        value={strategyParams.code ?? selectedStrategy.parameters[0].defaultValue}
                                         onChange={(val) => setStrategyParams({ ...strategyParams, code: val })}
                                     />
                                 ) : (

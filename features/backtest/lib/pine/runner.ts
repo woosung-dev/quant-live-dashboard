@@ -9,8 +9,14 @@ interface PineRunnerResult {
 }
 
 export function runPineScript(script: string, candles: Candle[]): PineRunnerResult {
+    // console.log("Run Pine Script:", script.substring(0, 50) + "...");
+    if (!candles || candles.length === 0) {
+        console.warn("Run Pine Script: No candles provided");
+        return { signals: [], indicators: {} };
+    }
     const prices = getClosePrices(candles);
     const { jsCode, indicators: indicatorDefs } = transpilePineScript(script);
+    console.log("Transpiled Indicators:", indicatorDefs);
 
     // 1. Parse Inputs (Simple regex extract)
     const inputMap = new Map<string, number>();
@@ -39,10 +45,14 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
     const indicatorContext: Record<string, any> = {};
     const indicatorResults: Record<string, number[]> = {};
 
+    // Debug available indicators
+    // console.log("Available Indicators:", Object.keys(PINE_INDICATORS));
+
     for (const def of indicatorDefs) {
         const func = PINE_INDICATORS[def.name as PineIndicatorName];
         if (!func) {
-            console.warn(`Indicator function not found for: ${def.name}`);
+            console.warn(`Indicator function not found for: ${def.name}. Available: ${Object.keys(PINE_INDICATORS).join(', ')}`);
+            indicatorContext[def.id] = []; // Fallback to prevent crash
             continue;
         }
 
@@ -50,7 +60,8 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
         const args = def.args.map(argRaw => {
             const arg = argRaw.trim();
             // Check if number
-            if (!isNaN(parseFloat(arg))) return parseFloat(arg);
+            const num = parseFloat(arg);
+            if (!isNaN(num) && isFinite(num)) return num;
             // Check if input variable
             if (inputMap.has(arg)) return inputMap.get(arg);
 
@@ -117,6 +128,10 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
 
     const fnBody = `
         const signals = [];
+        // Debug
+        // console.log("Context Keys:", Object.keys(indicators)); 
+        const keys = Object.keys(indicators);
+        if (!keys) console.error("Keys undefined?!");
         const { ${Object.keys(indicatorContext).join(', ')} } = indicators;
         
         // Pine Helpers
@@ -151,7 +166,10 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
              // mode: 1 = crossover, -1 = crossunder, 0 = cross (any)
              const arr1 = _seriesHistory[n1];
              const arr2 = _seriesHistory[n2];
-             if (!arr1 || !arr2 || idx < 1) return false;
+             if (!arr1 || !arr2 || idx < 1) {
+                 // console.warn("Cross: Series not found or index too low", n1, n2);
+                 return false;
+             }
              
              const curr1 = arr1[idx];
              const curr2 = arr2[idx];
@@ -190,15 +208,135 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
             crossunder: (src1, src2) => false,
             rsi: (src, len) => 50, 
             ema: (src, len) => _calculateEmaRuntime(src, len), 
-            // avg: via _pine_avg
+            avg: _pine_avg, // Expose avg in ta
+            cross: (a, b) => false, 
+            // Fallbacks for direct calls if transpiler didn't catch variables
         };
         
         // Time/Color helpers
         const timestamp = (y, m, d, h, min) => new Date(y, m-1, d, h, min).getTime();
-        const color = { red: 'red', white: 'white', orange: 'orange' }; // Mock colors
+        const color = { red: 'red', white: 'white', orange: 'orange', blue: 'blue', green: 'green', black: 'black', yellow: 'yellow', aqua: 'aqua', teal: 'teal', gray: 'gray', lime: 'lime', maroon: 'maroon', fuchsia: 'fuchsia', olive: 'olive', navy: 'navy', silver: 'silver', purple: 'purple' }; 
+        // Input Identity Function with Heuristic
+        const input = (...args) => {
+            // Arguments might be shifted/reordered due to transpiler stripping "key="
+            // e.g. input(title="T", defval=10) -> input("T", 10)
+            // e.g. input(10, "T") -> input(10, "T")
+            
+            // Known type constants to ignore
+            const typeConsts = ['bool', 'int', 'float', 'string', 'symbol', 'resolution', 'session', 'source', 'color', 'time'];
+            
+            // Filter out internal type constants
+            const cleanArgs = args.filter(a => !typeConsts.includes(a));
+            
+            // Priority 1: Return first Boolean or Number
+            const val = cleanArgs.find(a => typeof a === 'boolean' || typeof a === 'number');
+            if (val !== undefined) return val;
+            
+            // Priority 2: Return first arg (likely string input)
+            return cleanArgs[0];
+        };
+        // Attach type constants to input function
+        Object.assign(input, {
+             bool: 'bool', int: 'int', float: 'float', string: 'string', symbol: 'symbol', resolution: 'resolution', session: 'session', source: 'source', color: 'color', time: 'time' 
+        });
+
+        const shape = { labelup: 'labelup', labeldown: 'labeldown', triangleup: 'triangleup', triangledown: 'triangledown', circle: 'circle', cross: 'cross', xcross: 'xcross', arrowup: 'arrowup', arrowdown: 'arrowdown', square: 'square', diamond: 'diamond', flag: 'flag' };
+        const size = { auto: 'auto', tiny: 'tiny', small: 'small', normal: 'normal', large: 'large', huge: 'huge' };
+        const location = { abovebar: 'abovebar', belowbar: 'belowbar', top: 'top', bottom: 'bottom', absolute: 'absolute' };
+        
+        // Mock Visual Functions
+        const plot = () => 0;
+        const plotshape = () => 0;
+        const fill = () => 0;
+        const hline = () => 0;
+        const bgcolor = () => 0;
+        const barcolor = () => 0;
+        
+        // Strategy/Study mocks if they appear as functions
+        const study = () => 0;
+        // strategy object is already partially mocked via replacement, but 'strategy()' call check:
+        // strategy object implementation
+        const strategy = {
+            entry: (id, direction, qty, limit, stop, oca_name, oca_type, comment, when) => {
+                // Heuristic: Check for 'when' condition passed as other arguments due to named-arg stripping
+                let condition = true; // default true if no 'when' passed? Pine default is true? No, usually explicit.
+                // If named arg "when=longCondition" was stripped, 'longCondition' (bool) might be in 'qty' (3rd) or others.
+                
+                // Identify boolean args
+                const args = [qty, limit, stop, oca_name, oca_type, comment, when];
+                const boolArg = args.find(a => typeof a === 'boolean');
+                if (boolArg !== undefined) {
+                    condition = boolArg;
+                }
+                
+                if (!condition) return;
+
+                // Map direction 'long' -> 'buy', 'short' -> 'sell'
+                const type = (direction === 'long' || direction === strategy.long) ? 'buy' : 'sell';
+                signals.push({ 
+                    time: candles[i].time, 
+                    type: type, 
+                    price: candles[i].close, 
+                    reason: id 
+                });
+            },
+            close: (id, comment, qty, func, when) => { // args might be shifted
+                 let condition = true;
+                 const args = [comment, qty, func, when]; // check positional args after id
+                 const boolArg = args.find(a => typeof a === 'boolean');
+                 if (boolArg !== undefined) condition = boolArg;
+                 
+                 if (!condition) return;
+
+                // Heuristic: 'close' usually implies exiting the position identified by id.
+                // Without state, we can't be sure if "Long" means we need to Sell, or "Short" means we need to Buy.
+                // commonly, strategy.close("Long") -> Sell. strategy.close("Short") -> Buy.
+                // For MVP, we default to 'sell' if id contains "Long", 'buy' if "Short", else 'sell' (safe exit).
+                let type = 'sell';
+                if (id && id.toLowerCase().includes('short')) type = 'buy';
+                
+                signals.push({ 
+                    time: candles[i].time, 
+                    type: type, 
+                    price: candles[i].close, 
+                    reason: "Close " + id 
+                });
+            },
+            exit: (id, from_entry, qty, limit, stop, profit, loss, trail_points, trail_offset, comment) => {
+                // Exit is complex (tp/sl). For now, treat as general close/sell signal.
+               signals.push({ 
+                   time: candles[i].time, 
+                   type: 'sell', 
+                   price: candles[i].close, 
+                   reason: "Exit " + (id || from_entry)
+               });
+            },
+            cancel: () => {},
+            cancel_all: () => {},
+            order: () => {},
+            // properties
+            long: 'long',
+            short: 'short',
+            position_size: 0, // mock
+            opentrades: 0
+        };
         
         for (let i = 0; i < candles.length; i++) {
+        // ... (rest of the file)
             try {
+                // Define built-in time variables
+                const _dateObj = new Date(candles[i].time);
+                const year = _dateObj.getFullYear();
+                const month = _dateObj.getMonth() + 1;
+                const dayofmonth = _dateObj.getDate();
+                const dayofweek = _dateObj.getDay() + 1; // Pine: 1=Sunday
+                const hour = _dateObj.getHours();
+                const minute = _dateObj.getMinutes();
+                const second = _dateObj.getSeconds();
+                // Pine Script 'time' is in milliseconds. 
+                // Our candle.time is in seconds. We must convert it for the script logic.
+                const time = candles[i].time * 1000;
+                
                 ${jsCode}
             } catch (err) {
                 console.error("Runtime Error at candle " + i, err);
