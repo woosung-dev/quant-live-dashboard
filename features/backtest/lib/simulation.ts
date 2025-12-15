@@ -145,10 +145,19 @@ export function runCustomStrategy(prices: number[], code: string): SimulationRes
     // if (fastMA > slowMA) return 'BUY';
     // if (fastMA < slowMA) return 'SELL';
 
-    let strategyFn: (...args: any[]) => any;
+    interface Portfolio {
+        balance: number;
+        position: number;
+        entryPrice: number;
+    }
+
+    // Dynamic strategy function signature
+    // args: [prices: number[], portfolio: Portfolio]
+    let strategyFn: (prices: number[], portfolio: Portfolio) => 'BUY' | 'SELL' | undefined;
+
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-implied-eval
-        strategyFn = new Function('prices', 'portfolio', code) as (...args: any[]) => any;
+        strategyFn = new Function('prices', 'portfolio', code) as (prices: number[], portfolio: Portfolio) => 'BUY' | 'SELL' | undefined;
     } catch (e) {
         console.error("Failed to parse strategy code", e);
         return { totalPnL: 0, winRate: 0, trades: 0, equityCurve: [] };

@@ -16,7 +16,7 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
     }
     const prices = getClosePrices(candles);
     const { jsCode, indicators: indicatorDefs } = transpilePineScript(script);
-    console.log("Transpiled Indicators:", indicatorDefs);
+
 
     // 1. Parse Inputs (Simple regex extract)
     const inputMap = new Map<string, number>();
@@ -39,7 +39,7 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
         }
         if (!isNaN(val)) inputMap.set(varName, val);
     }
-    console.log("Runner: Parsed Inputs:", Object.fromEntries(inputMap));
+
 
     // 2. Pre-calculate Indicators
     const indicatorContext: Record<string, any> = {};
@@ -77,7 +77,7 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
 
         // @ts-expect-error - dynamic args
         const result = func(...args);
-        console.log(`Runner: Calculated ${def.name} (${def.id})`, result ? (Array.isArray(result) ? `Array[${result.length}]` : `Object keys: ${Object.keys(result)}`) : 'UNDEFINED');
+
 
         // Always assign to context for execution
         indicatorContext[def.id] = result;
@@ -91,7 +91,7 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
         }
     }
 
-    console.log("Runner: Indicator Keys:", Object.keys(indicatorContext));
+
     // console.log("Runner: Indicator[0] length:", indicatorContext['_ind_0']?.length);
 
     // 2. Create Function
@@ -347,9 +347,7 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
     `;
 
     // Debug Log
-    console.log("--- Generated Pine JS ---");
-    console.log(fnBody);
-    console.log("-------------------------");
+
 
     try {
         const fn = new Function('candles', 'indicators', fnBody);
@@ -357,7 +355,7 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
         return { signals, indicators: indicatorResults };
     } catch (e) {
         console.error("Pine Script Compilation/Execution Error:", e);
-        console.log("FnBody:", fnBody);
+
         throw e;
     }
 }

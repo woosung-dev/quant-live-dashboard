@@ -71,6 +71,7 @@ export const pineStrategy: Strategy = {
     id: 'pine-script',
     name: 'Custom Pine Script',
     description: 'Write your own strategy using Pine Script Lite syntax.',
+    type: 'PINE_SCRIPT', // Required for persistence logic
     parameters,
     execute
 };

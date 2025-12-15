@@ -13,9 +13,11 @@ export function ResultTabs({ defaultValue = "chart", children }: ResultTabsProps
     return (
         <Tabs defaultValue={defaultValue} className="w-full space-y-4">
             <div className="flex items-center justify-between">
-                <TabsList>
-                    <TabsTrigger value="chart">Chart & Performance</TabsTrigger>
-                    <TabsTrigger value="trades">Trade Log</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
+                    <TabsTrigger value="chart">Chart</TabsTrigger>
+                    <TabsTrigger value="summary">Summary</TabsTrigger>
+                    <TabsTrigger value="analysis">Analysis</TabsTrigger>
+                    <TabsTrigger value="trades">Trades</TabsTrigger>
                 </TabsList>
             </div>
             {children}

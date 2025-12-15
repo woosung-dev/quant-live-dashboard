@@ -16,6 +16,8 @@ import {
     Trade,
     TIMEFRAME_MAP,
 } from '@/types';
+import { supabase } from '@/lib/supabase'; // Import Supabase client
+import { runPineScript } from './pine/runner';
 
 const BINANCE_API_BASE = 'https://api.binance.com/api/v3';
 
@@ -35,6 +37,74 @@ export async function fetchCandles(
     endTime?: number
 ): Promise<Candle[]> {
     const interval = TIMEFRAME_MAP[timeframe];
+    // Convert ms inputs to seconds for DB comparison if needed, but Binance takes ms.
+    // Our DB stores 'time' as Unix timestamp in seconds (per our Transform).
+
+    // 1. Try to fetch from Cache
+    // We want the LATEST 'limit' candles ending at 'endTime' (or now).
+    // If startTime is provided, we want candles >= startTime.
+
+    // Simplification: For now, let's just try to fetch the range from DB if both start/end are known,
+    // or just fetch from API and upsert. Backtesting usually needs precise data.
+    // Given the complexity of gap handling in cache, a robust strategy is:
+    // Try fetch from DB -> If count < limit -> Fetch from API -> Upsert to DB.
+
+    try {
+        let query = supabase
+            .from('candle_cache')
+            .select('*')
+            .eq('symbol', symbol)
+            .eq('timeframe', timeframe)
+            .order('time', { ascending: true });
+
+        if (startTime) {
+            query = query.gte('time', startTime ? Math.floor(startTime / 1000) : 0);
+        }
+        if (endTime) {
+            query = query.lte('time', endTime ? Math.floor(endTime / 1000) : Number.MAX_SAFE_INTEGER);
+        } else {
+            // If no endTime, we usually want the latest.
+            // But 'limit' implies we want the *last* N candles.
+            // If we query ascending, we get the *first* N.
+            // Use descending for latest, then reverse.
+            if (!startTime) {
+                query = supabase
+                    .from('candle_cache')
+                    .select('*')
+                    .eq('symbol', symbol)
+                    .eq('timeframe', timeframe)
+                    .order('time', { ascending: false })
+                    .limit(limit);
+            }
+        }
+
+        const { data: cachedData, error } = await query;
+
+        // If specific range requested (start/end), check coverage?
+        // For simplified "latest" query:
+        if (!error && cachedData && cachedData.length > 0) {
+            // If we requested limit=500 and got 500, we're good.
+            // If we got fewer, maybe gap?
+            // For now, let's only use cache if we have "enough" data relative to limit.
+            // Or just merge? Merging is hard.
+            // Simple policy: If cache hit count >= limit, USE IT.
+            if (cachedData.length >= limit) {
+                console.log(`Cache Hit: ${cachedData.length} candles for ${symbol}-${timeframe}`);
+                // If we fetched descending, reverse back to ascending
+                const sorted = !startTime && !endTime ? cachedData.reverse() : cachedData;
+                return sorted.map(c => ({
+                    time: Number(c.time),
+                    open: Number(c.open),
+                    high: Number(c.high),
+                    low: Number(c.low),
+                    close: Number(c.close),
+                    volume: Number(c.volume)
+                }));
+            }
+        }
+    } catch (e) {
+        console.warn("Cache Warning:", e);
+    }
 
     const params = new URLSearchParams({
         symbol: symbol.toUpperCase(),
@@ -51,15 +121,44 @@ export async function fetchCandles(
 
     const url = `${BINANCE_API_BASE}/klines?${params.toString()}`;
 
-    const response = await fetch(url);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Binance API 오류: ${response.status} ${response.statusText}`);
+        }
 
-    if (!response.ok) {
-        throw new Error(`Binance API 오류: ${response.status} ${response.statusText}`);
+        const data: BinanceKline[] = await response.json();
+        const candles = data.map(transformKlineToCandle);
+
+        // Async Cache Insert (Fire and Forget)
+        (async () => {
+            if (candles.length > 0) {
+                const rows = candles.map(c => ({
+                    symbol: symbol,
+                    timeframe: timeframe,
+                    time: c.time,
+                    open: c.open,
+                    high: c.high,
+                    low: c.low,
+                    close: c.close,
+                    volume: c.volume
+                }));
+
+                const { error } = await supabase
+                    .from('candle_cache')
+                    .upsert(rows, { onConflict: 'symbol,timeframe,time', ignoreDuplicates: true });
+
+                if (error) console.error("Cache Insert Error:", error);
+                else console.log(`Cached ${rows.length} candles for ${symbol}`);
+            }
+        })();
+
+        return candles;
+
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        throw err;
     }
-
-    const data: BinanceKline[] = await response.json();
-
-    return data.map(transformKlineToCandle);
 }
 
 /**
@@ -284,12 +383,27 @@ export async function runBacktest(
         config.symbol,
         config.timeframe,
         config.limit || 1000,
-        config.startDate?.getTime(),
         config.endDate?.getTime()
     );
 
     // 2. 전략 실행하여 시그널 생성
-    const { signals, indicators } = strategy.execute(candles, params);
+    let signals: Signal[] = [];
+    let indicators: Record<string, number[]> | undefined;
+
+    if (strategy.type === 'PINE_SCRIPT' || strategy.id === 'pine-script' || (strategy.id && strategy.id.startsWith('custom-'))) {
+        const code = (params.code as string) || strategy.code || "";
+        if (code) {
+            const pineResult = runPineScript(code, candles);
+            signals = pineResult.signals;
+            indicators = pineResult.indicators;
+        }
+    } else if (strategy.execute) {
+        const result = strategy.execute(candles, params);
+        signals = result.signals;
+        indicators = result.indicators;
+    } else {
+        console.warn(`Strategy ${strategy.name} cannot be executed.`);
+    }
 
     // 3. 시그널 기반으로 거래 시뮬레이션
     const { trades, equityCurve } = simulateTrades(

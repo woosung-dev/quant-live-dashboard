@@ -69,8 +69,27 @@ export interface Strategy {
     id: string;
     name: string;
     description: string;
+    type?: string; // e.g. 'PINE_SCRIPT', 'SMA_CROSS'
+    code?: string;
     parameters: ParameterDefinition[];
-    execute: (candles: Candle[], params: Record<string, unknown>) => StrategyResult;
+    execute?: (candles: Candle[], params: Record<string, unknown>) => StrategyResult;
+    // Social fields
+    isPublic?: boolean;
+    tags?: string[];
+    forkCount?: number;
+    likeCount?: number;
+    parentStrategyId?: string;
+    authorId?: string;
+    authorName?: string;
+    createdAt?: string;
+
+    // Performance Metrics (Snapshot)
+    performance?: {
+        cagr: number;
+        mdd: number;
+        winRate: number;
+        totalTrades: number;
+    };
 }
 
 /** 캔들 데이터 */

@@ -46,7 +46,7 @@ export function BacktestChart({ candles, signals, overlays }: BacktestChartProps
                 horzLines: { color: isDark ? "#27272A" : "#E5E7EB" },
             },
             width: chartContainerRef.current.clientWidth,
-            height: 400,
+            height: chartContainerRef.current.clientHeight, // Initial height from container
             timeScale: {
                 timeVisible: true,
                 secondsVisible: false,
@@ -67,16 +67,17 @@ export function BacktestChart({ candles, signals, overlays }: BacktestChartProps
         chartRef.current = chart;
         candlestickSeriesRef.current = candlestickSeries;
 
-        const handleResize = () => {
-            if (chartContainerRef.current) {
-                chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-            }
-        };
+        // ResizeObserver for container
+        const resizeObserver = new ResizeObserver(entries => {
+            if (entries.length === 0 || !entries[0].contentRect) return;
+            const { width, height } = entries[0].contentRect;
+            chart.applyOptions({ width, height });
+        });
 
-        window.addEventListener("resize", handleResize);
+        resizeObserver.observe(chartContainerRef.current);
 
         return () => {
-            window.removeEventListener("resize", handleResize);
+            resizeObserver.disconnect();
             chart.remove();
             chartRef.current = null;
             candlestickSeriesRef.current = null;
@@ -158,7 +159,7 @@ export function BacktestChart({ candles, signals, overlays }: BacktestChartProps
                     position: (s.type === "buy" ? "belowBar" : "aboveBar") as "belowBar" | "aboveBar",
                     color: s.type === "buy" ? "#10B981" : "#EF4444",
                     shape: (s.type === "buy" ? "arrowUp" : "arrowDown") as "arrowUp" | "arrowDown",
-                    text: s.type.toUpperCase(),
+                    text: s.type === "buy" ? "LONG" : "SHORT",
                     size: 1
                 }));
 
