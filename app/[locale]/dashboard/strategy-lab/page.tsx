@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { TabsContent } from "@/components/ui/tabs";
+
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -22,8 +22,10 @@ import { TimeframeSelector } from "@/features/backtest/components/TimeframeSelec
 import { BacktestChart, OverlayLine } from "@/features/backtest/components/BacktestChart";
 import { IndicatorChart } from "@/features/backtest/components/IndicatorChart";
 import { MetricsCards } from "@/features/backtest/components/MetricsCards";
-import { ResultTabs } from "@/features/backtest/components/ResultTabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TradeLogTable } from "@/features/backtest/components/TradeLogTable";
+import { SummaryTab } from "@/features/backtest/components/SummaryTab";
+import { AnalysisTab } from "@/features/backtest/components/AnalysisTab";
 import { AlertSettings } from "@/features/backtest/components/AlertSettings";
 import {
     getStrategyById,
@@ -39,7 +41,19 @@ import {
     SUPPORTED_SYMBOLS,
     Candle
 } from "@/types";
-import { Loader2, Play } from "lucide-react";
+import { Loader2, Play, Lock, Zap } from "lucide-react";
+import { toast } from "sonner";
+import { saveStrategy, getUserStrategies, StrategyDTO } from "@/features/backtest/lib/storage";
+import { Save, FolderOpen, RefreshCw } from "lucide-react";
+import { SaveStrategyDialog } from "@/features/backtest/components/SaveStrategyDialog";
+import { ShareDialog } from "@/features/social/components/ShareDialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { SecurityManager, KeyMap } from "@/features/trade/lib/security";
+import { ExchangeService, ExchangeConfig } from "@/features/trade/lib/exchange";
+
 
 // Default configuration
 const DEFAULT_CONFIG: BacktestConfig = {
@@ -77,9 +91,16 @@ export default function StrategyLabPage() {
     const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Dialog State
+    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+    const [isPasscodeOpne, setIsPasscodeOpen] = useState(false);
+    const [passcode, setPasscode] = useState("");
+
     // Real-time State
-    const realtimeRunner = useRef<RealtimeRunner | null>(null);
+    const runnerRef = useRef<RealtimeRunner | null>(null);
+    const apiKeysRef = useRef<KeyMap | null>(null);
     const [realtimeState, setRealtimeState] = useState<RealtimeState | null>(null);
+    const [isLiveMode, setIsLiveMode] = useState(false); // Toggle for UI
 
     // Derived State
     const selectedStrategy = getStrategyById(selectedStrategyId);
@@ -96,10 +117,57 @@ export default function StrategyLabPage() {
     }, [selectedStrategyId]);
 
     // Cleanup runner on unmount
+    // Initialize & Cleanup runner
+    // Initialize & Cleanup runner
     useEffect(() => {
+        runnerRef.current = new RealtimeRunner(
+            (state) => setRealtimeState(state),
+            async (req) => {
+                // Trade Execution Callback
+                if (apiKeysRef.current) {
+                    const keys = apiKeysRef.current;
+                    // Find exchange config (Defaulting to Binance for MVP)
+                    const exchangeId = 'binance';
+                    const keyData = keys[exchangeId];
+                    if (!keyData) {
+                        toast.error(`No API Key found for ${exchangeId}`);
+                        return;
+                    }
+
+                    try {
+                        const service = new ExchangeService();
+                        // Assume connected in memory or reconnect? 
+                        // Service.connect is async.
+                        // Ideally we keep a persistent service instance, but for now reconnecting is safer/easier statelessly?
+                        // Actually connecting is fast.
+                        await service.connect({
+                            id: exchangeId,
+                            apiKey: keyData.apiKey,
+                            secret: keyData.secret,
+                            // testnet: true // TODO: Store testnet preference in KeyMap
+                        });
+
+                        // Execute Market Order
+                        // Quantity? 
+                        // For MVP: Fixed tiny amount or error if not specified?
+                        // Let's rely on req.quantity if present, else minimum.
+                        const qty = req.quantity || 0.001; // BTC min?
+
+                        await service.createMarketOrder(req.symbol, req.side, qty);
+                        toast.success(`Unknown Order Placed on ${exchangeId}! (Simulated success if API works)`);
+                    } catch (e) {
+                        console.error("Trade Execution Failed", e);
+                        toast.error("Trade Execution Failed: " + (e as Error).message);
+                    }
+                } else {
+                    console.warn("Trade requested but no API keys unlocked.");
+                }
+            }
+        );
+
         return () => {
-            if (realtimeRunner.current) {
-                realtimeRunner.current.stop();
+            if (runnerRef.current) {
+                runnerRef.current.stop();
             }
         };
     }, []);
@@ -122,32 +190,124 @@ export default function StrategyLabPage() {
             setResult(result);
         } catch (err) {
             console.error(err);
-            setError(err instanceof Error ? err.message : "백테스트 실행 중 오류가 발생했습니다.");
+            setError(err instanceof Error ? err.message : "Backtest execution failed.");
         } finally {
             setIsRunning(false);
         }
     };
 
-    const toggleRealtime = () => {
+    // --- Save/Load Strategy Handlers ---
+    const handleSaveOpen = () => {
+        if (!selectedStrategy || selectedStrategy.type !== 'PINE_SCRIPT') {
+            toast.error("Only Custom Pine Strategies can be saved.");
+            return;
+        }
+        setIsSaveDialogOpen(true);
+    };
+
+    const handleConfirmSave = async (strategyName: string) => {
+        if (!selectedStrategy) return;
+
+        const dto: StrategyDTO = {
+            id: selectedStrategy.id.startsWith('custom-') ? undefined : selectedStrategy.id,
+            name: strategyName,
+            type: 'PINE_SCRIPT',
+            code: strategyParams.code as string,
+            parameters: selectedStrategy.parameters
+        };
+
+        const saved = await saveStrategy(dto);
+        if (saved) {
+            toast.success("Strategy saved successfully!");
+            // Dispatch event to update StrategySelector
+            window.dispatchEvent(new Event('strategy-saved'));
+        } else {
+            toast.error("Failed to save strategy.");
+        }
+    };
+
+    const handleLoadStrategies = async () => {
+        // Trigger reload in StrategySelector via event or just let it be.
+        // Actually the button is "Load", maybe it should just open the selector or refresh it?
+        // Since Selector is always visible, "Load" button is redundant if Selector auto-loads.
+        // Let's make "Load" text "Refresh List" and reload.
+        window.dispatchEvent(new Event('strategy-saved'));
+        toast.success("Refreshed strategy list.");
+    };
+    // -----------------------------------
+
+    const handleToggleRealtime = () => {
+        if (!selectedStrategy || !runnerRef.current) return;
+
         if (realtimeState?.status === 'running') {
-            realtimeRunner.current?.stop();
+            runnerRef.current.stop();
+            toast.info("Realtime monitoring stopped.");
             return;
         }
 
-        if (!selectedStrategy) return;
-
-        if (!realtimeRunner.current) {
-            realtimeRunner.current = new RealtimeRunner((state) => {
-                setRealtimeState(state);
-            });
+        // If Live Mode selected, check keys
+        if (isLiveMode) {
+            if (!SecurityManager.hasSavedKeys()) {
+                toast.error("No API Keys found. Go to Settings to configure them.");
+                return;
+            }
+            // Unlock keys first
+            setIsPasscodeOpen(true);
+            return;
         }
 
-        realtimeRunner.current.start(
-            { symbol, timeframe, initialCapital: 0 }, // Capital not used for alerts
+        startRunner('PAPER');
+    };
+
+    const startRunner = (mode: 'PAPER' | 'LIVE', unlockedKeys?: KeyMap) => {
+        if (!runnerRef.current || !selectedStrategy) return;
+
+        if (mode === 'LIVE' && unlockedKeys) {
+            apiKeysRef.current = unlockedKeys;
+        }
+
+        // Load Alert Config
+        const savedConfig = localStorage.getItem('quant_live_notification_config');
+        let alertConfig: AlertConfig | undefined = undefined;
+        if (savedConfig) {
+            try {
+                alertConfig = JSON.parse(savedConfig);
+            } catch (e) {
+                console.error("Failed to parse alert config", e);
+            }
+        }
+
+        const config: BacktestConfig = {
+            symbol,
+            timeframe,
+            initialCapital: 10000,
+        };
+
+        const realtimeConfig = {
+            ...config,
+            intervalSeconds: 10,
+            executionMode: mode
+        };
+
+        toast.success(`Started ${mode} monitoring ${symbol} ${timeframe}`);
+
+        runnerRef.current.start(
+            realtimeConfig,
             selectedStrategy,
             strategyParams,
-            alertConfig.url ? alertConfig : undefined
+            alertConfig
         );
+    };
+
+    const handleUnlockAndStart = () => {
+        const keys = SecurityManager.loadKeys(passcode);
+        if (keys) {
+            setPasscode("");
+            setIsPasscodeOpen(false);
+            startRunner('LIVE', keys);
+        } else {
+            toast.error("Invalid Passcode");
+        }
     };
 
     // Prepare Overlays (EMA Cross)
@@ -200,162 +360,189 @@ export default function StrategyLabPage() {
     }, [result, selectedStrategyId, strategyParams]);
 
     return (
-        <div className="container mx-auto p-4 space-y-6 max-w-7xl">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
+        <div className="flex h-[calc(100vh-4rem)] w-full bg-background overflow-hidden">
+            {/* Left Sidebar: Configuration & Controls */}
+            <aside className="w-[340px] 2xl:w-[400px] border-r bg-card/50 backdrop-blur-xl flex flex-col z-30 transition-all duration-300 shadow-md">
+                <div className="h-14 px-4 border-b flex items-center justify-between bg-background/50 backdrop-blur-md">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-3xl font-bold tracking-tight">Strategy Lab</h1>
+                        <span className="text-sm font-bold tracking-wider uppercase text-foreground/80">Strategy Lab</span>
                         {realtimeState?.status === 'running' && (
-                            <Badge variant="destructive" className="animate-pulse">LIVE</Badge>
+                            <Badge variant="destructive" className="animate-pulse px-1.5 py-0.5 text-[9px] font-mono tracking-widest">LIVE</Badge>
                         )}
                     </div>
-                    <p className="text-muted-foreground">
-                        전략을 만들고 테스트하여 시장을 이기는 알파를 찾으세요.
-                    </p>
+                    <AlertSettings
+                        onSave={setAlertConfig}
+                        defaultConfig={alertConfig}
+                    />
                 </div>
-                <AlertSettings
-                    onSave={setAlertConfig}
-                    defaultConfig={alertConfig}
-                />
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Left Sidebar: Configuration */}
-                <Card className="lg:col-span-1 h-fit">
-                    <CardHeader>
-                        <CardTitle className="text-lg">설정 (Configuration)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">심볼 (Symbol)</label>
-                            <Select value={symbol} onValueChange={setSymbol}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="심볼 선택" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {SUPPORTED_SYMBOLS.map((s) => (
-                                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                <ScrollArea className="flex-1">
+                    <div className="p-4 space-y-6">
+                        {/* 1. Strategy Selection */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Strategy</label>
+                            <StrategySelector
+                                selectedStrategyId={selectedStrategyId}
+                                onSelect={setSelectedStrategyId}
+                            />
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={handleSaveOpen}>
+                                    <Save className="w-3.5 h-3.5 mr-2" />
+                                    Save
+                                </Button>
+                                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={handleLoadStrategies}>
+                                    <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                                    Load
+                                </Button>
+                            </div>
+                            {/* Share Button (Only for saved strategies) */}
+                            {selectedStrategy && selectedStrategy.id.length > 20 && ( // Simple heuristic for UUID vs string ID
+                                <div className="mt-2 text-center">
+                                    <ShareDialog
+                                        strategy={selectedStrategy}
+                                        onUpdate={() => {
+                                            window.dispatchEvent(new Event('strategy-saved'));
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
 
-                        <TimeframeSelector selectedTimeframe={timeframe} onSelect={setTimeframe} />
+                        <Separator className="bg-border/50" />
 
-                        <Separator />
+                        {/* 2. Market Config */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Market Data</label>
+                            <div className="flex flex-col gap-4">
+                                <Select value={symbol} onValueChange={setSymbol}>
+                                    <SelectTrigger className="h-9 w-full bg-background/50">
+                                        <SelectValue placeholder="Symbol" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SUPPORTED_SYMBOLS.map((s) => (
+                                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <TimeframeSelector selectedTimeframe={timeframe} onSelect={setTimeframe} />
+                            </div>
+                        </div>
 
-                        <StrategySelector selectedStrategyId={selectedStrategyId} onSelect={setSelectedStrategyId} />
+                        <Separator className="bg-border/50" />
 
-
+                        {/* 3. Parameters */}
                         {selectedStrategy && (
-                            <div className="space-y-4 border rounded-md p-3 bg-muted/20">
+                            <div className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs font-semibold uppercase text-muted-foreground">Parameters</span>
+                                    <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Parameters</label>
                                 </div>
-
-                                {selectedStrategy.id === 'pine-script' ? (
-                                    <PineEditor
-                                        value={strategyParams.code ?? selectedStrategy.parameters[0].defaultValue}
-                                        onChange={(val) => setStrategyParams({ ...strategyParams, code: val })}
-                                    />
-                                ) : (
-                                    <ParameterForm
-                                        parameters={selectedStrategy.parameters}
-                                        values={strategyParams}
-                                        onChange={setStrategyParams}
-                                    />
-                                )}
+                                <div className="border rounded-lg p-3 bg-muted/30">
+                                    {selectedStrategy.id === 'pine-script' ? (
+                                        <PineEditor
+                                            value={strategyParams.code ?? selectedStrategy.parameters[0].defaultValue}
+                                            onChange={(val) => setStrategyParams({ ...strategyParams, code: val })}
+                                        />
+                                    ) : (
+                                        <ParameterForm
+                                            parameters={selectedStrategy.parameters}
+                                            values={strategyParams}
+                                            onChange={setStrategyParams}
+                                        />
+                                    )}
+                                </div>
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-2 mt-4">
+                        {/* 4. Actions */}
+                        <div className="grid grid-cols-1 gap-3 pt-2">
                             <Button
-                                className="w-full"
+                                className="w-full relative overflow-hidden group"
                                 size="lg"
                                 onClick={handleRunBacktest}
                                 disabled={isRunning || !selectedStrategy}
                             >
-                                {isRunning ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        실행 중...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play className="mr-2 h-4 w-4 fill-current" />
-                                        백테스트
-                                    </>
-                                )}
+                                <div className="absolute inset-0 bg-primary/10 group-hover:bg-primary/20 transition-colors" />
+                                <span className="relative flex items-center justify-center">
+                                    {isRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                                    Run Backtest
+                                </span>
                             </Button>
 
                             <Button
                                 className="w-full"
                                 size="lg"
                                 variant={realtimeState?.status === 'running' ? "destructive" : "secondary"}
-                                onClick={toggleRealtime}
+                                onClick={handleToggleRealtime}
                                 disabled={!selectedStrategy}
                             >
-                                {realtimeState?.status === 'running' ? "중지 (Stop)" : "실전 활성화 (Activate)"}
+                                {realtimeState?.status === 'running' ? "Stop Monitoring" : (isLiveMode ? "Start Live Trading" : "Start Paper Trading")}
                             </Button>
+
+                            <div className="flex items-center justify-between px-2 pt-2">
+                                <Label htmlFor="live-mode" className={`text-xs font-semibold ${isLiveMode ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                    {isLiveMode ? "LIVE EXECUTION ENABLED" : "Paper Trading Mode"}
+                                </Label>
+                                <Switch
+                                    id="live-mode"
+                                    checked={isLiveMode}
+                                    onCheckedChange={setIsLiveMode}
+                                    disabled={realtimeState?.status === 'running'}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </ScrollArea>
+
+                {/* Real-time Logs Footer */}
+                {realtimeState && (
+                    <div className="h-32 border-t bg-black/90 p-2 font-mono text-[10px]">
+                        <div className="flex justify-between items-center mb-1 text-muted-foreground">
+                            <span>Real-time Logs</span>
+                            <span className={realtimeState.status === 'running' ? 'text-green-500' : 'text-red-500'}>●</span>
+                        </div>
+                        <ScrollArea className="h-[calc(100%-1.5rem)]">
+                            {realtimeState.logs.map((log, i) => (
+                                <div key={i} className="text-green-400/90 py-0.5 border-b border-green-900/20">{log}</div>
+                            ))}
+                        </ScrollArea>
+                    </div>
+                )}
+            </aside>
+
+            {/* Main Content: Chart & Analytics */}
+            <main className="flex-1 flex flex-col min-w-0 bg-muted/5 h-full relative">
+                {/* Top Metrics Bar */}
+                {/* Top Metrics Bar */}
+                <div className="h-14 border-b bg-background/40 backdrop-blur-md px-4 flex items-center overflow-x-auto gap-4 no-scrollbar">
+                    <MetricsCards metrics={result?.metrics || null} isLoading={isRunning} />
+                </div>
+
+                {/* Main Graph Area */}
+                <div className="flex-1 min-h-0 relative flex flex-col">
+                    <Tabs defaultValue="chart" className="flex-1 flex flex-col h-full">
+                        <div className="absolute top-3 right-4 z-20">
+                            <TabsList className="bg-background/60 backdrop-blur-md border shadow-sm h-8">
+                                <TabsTrigger value="chart" className="text-xs h-6 px-3">Chart</TabsTrigger>
+                                <TabsTrigger value="analysis" className="text-xs h-6 px-3">Analysis</TabsTrigger>
+                                <TabsTrigger value="summary" className="text-xs h-6 px-3">Summary</TabsTrigger>
+                                <TabsTrigger value="trades" className="text-xs h-6 px-3">Trades</TabsTrigger>
+                            </TabsList>
                         </div>
 
-                        {realtimeState && (
-                            <div className="mt-4 border rounded p-2 bg-black/80 font-mono text-xs h-32 overflow-hidden">
-                                <ScrollArea className="h-full">
-                                    {realtimeState.logs.map((log, i) => (
-                                        <div key={i} className="text-green-400 border-b border-green-900/30 pb-1 mb-1">{log}</div>
-                                    ))}
-                                </ScrollArea>
-                            </div>
-                        )}
-
-                        {error && (
-                            <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded">
-                                {error}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Main Content: Results Tabs */}
-                <div className="lg:col-span-3">
-                    <ResultTabs defaultValue="chart">
-                        <TabsContent value="chart" className="space-y-6">
-                            <MetricsCards metrics={result?.metrics || null} isLoading={isRunning} />
-
-                            <Card>
-                                <CardHeader className="py-4 border-b">
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle className="text-base font-medium flex items-center gap-2">
-                                            {symbol} {timeframe}
-                                            {result && <span className="text-muted-foreground font-normal text-sm">| {selectedStrategy?.name}</span>}
-                                        </CardTitle>
-                                        <div className="text-xs text-muted-foreground">
-                                            {result ? `${result.candles.length} Candles` : 'No Data'}
+                        <TabsContent value="chart" className="flex-1 h-full m-0 data-[state=inactive]:hidden flex flex-col">
+                            <div className="flex-1 relative w-full h-full bg-gradient-to-b from-background/50 to-muted/20">
+                                {result ? (
+                                    <>
+                                        <div className={`w-full ${result && indicatorChartProps ? 'h-[75%]' : 'h-full'}`}>
+                                            <BacktestChart
+                                                candles={result.candles}
+                                                signals={result.signals}
+                                                overlays={overlays}
+                                            />
                                         </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <div className="flex flex-col">
-                                        {/* Main Chart */}
-                                        <div className="w-full h-[400px] bg-background relative flex items-center justify-center">
-                                            {result ? (
-                                                <BacktestChart
-                                                    candles={result.candles}
-                                                    signals={result.signals}
-                                                    overlays={overlays}
-                                                />
-                                            ) : (
-                                                <div className="text-muted-foreground flex flex-col items-center gap-2">
-                                                    <Play className="w-8 h-8 opacity-20" />
-                                                    <span>백테스트를 실행하여 결과를 확인하세요</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Indicator Chart (if RSI/MACD) */}
-                                        {result && indicatorChartProps && (
-                                            <div className="w-full h-[150px] border-t bg-background">
+                                        {/* Indicator Chart (Bottom 25%) */}
+                                        {indicatorChartProps && (
+                                            <div className="h-[25%] border-t border-border/40 relative bg-background/40">
                                                 <IndicatorChart
                                                     data={indicatorChartProps.data}
                                                     title={indicatorChartProps.title}
@@ -365,21 +552,99 @@ export default function StrategyLabPage() {
                                                 />
                                             </div>
                                         )}
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+                                        <div className="p-4 rounded-full bg-muted/50">
+                                            <Play className="w-12 h-12 opacity-20" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-medium text-center">Ready to Backtest</h3>
+                                            <p className="text-sm opacity-70 text-center">Configure your strategy and press Run</p>
+                                        </div>
                                     </div>
-                                </CardContent>
-                            </Card>
+                                )}
+                            </div>
                         </TabsContent>
 
-                        <TabsContent value="trades">
-                            <Card>
-                                <CardContent className="p-0">
-                                    <TradeLogTable trades={result?.trades || []} />
-                                </CardContent>
-                            </Card>
+                        <TabsContent value="analysis" className="flex-1 h-full m-0 data-[state=inactive]:hidden p-6 overflow-auto">
+                            <div className="max-w-4xl mx-auto py-8">
+                                <h2 className="text-2xl font-bold mb-6">Strategy Analysis</h2>
+                                {result ? (
+                                    <AnalysisTab
+                                        metrics={result.metrics}
+                                        trades={result.trades}
+                                    />
+                                ) : <div className="text-center text-muted-foreground py-20">No results to analyze</div>}
+                            </div>
                         </TabsContent>
-                    </ResultTabs>
+
+                        <TabsContent value="summary" className="flex-1 h-full m-0 data-[state=inactive]:hidden p-6 overflow-auto">
+                            <div className="max-w-4xl mx-auto py-8">
+                                <h2 className="text-2xl font-bold mb-6">Performance Summary</h2>
+                                {result ? (
+                                    <SummaryTab
+                                        trades={result.trades}
+                                        initialCapital={result.config.initialCapital}
+                                    />
+                                ) : <div className="text-center text-muted-foreground py-20">No results</div>}
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="trades" className="flex-1 h-full m-0 data-[state=inactive]:hidden">
+                            <div className="h-full flex flex-col">
+                                <div className="p-4 border-b bg-background/50">
+                                    <h2 className="text-lg font-semibold">Trade Logs</h2>
+                                </div>
+                                <div className="flex-1 overflow-auto">
+                                    <TradeLogTable trades={result?.trades || []} />
+                                </div>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </div>
-            </div>
-        </div>
+            </main>
+
+            <SaveStrategyDialog
+                open={isSaveDialogOpen}
+                onOpenChange={setIsSaveDialogOpen}
+                onSave={handleConfirmSave}
+                defaultName={selectedStrategy?.name}
+            />
+
+            {error && (
+                <div className="fixed bottom-4 right-4 z-50">
+                    <Card className="border-red-500/50 bg-red-500/10 backdrop-blur text-red-500 shadow-xl">
+                        <CardContent className="p-4">
+                            {error}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+            {/* Passcode Dialog */}
+            <Dialog open={isPasscodeOpne} onOpenChange={setIsPasscodeOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Unlock API Keys</DialogTitle>
+                        <DialogDescription>
+                            Enter your security passcode to decrypt keys and start LIVE trading.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            type="password"
+                            placeholder="Passcode"
+                            value={passcode}
+                            onChange={(e) => setPasscode(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleUnlockAndStart()}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsPasscodeOpen(false)}>Cancel</Button>
+                        <Button onClick={handleUnlockAndStart}>Unlock & Start</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div >
     );
 }

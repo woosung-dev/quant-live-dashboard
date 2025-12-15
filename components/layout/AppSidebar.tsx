@@ -11,7 +11,8 @@ import {
     Settings,
     LogOut,
     ChevronRight,
-    Menu
+    Menu,
+    Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -46,6 +47,11 @@ export function AppSidebar({ className }: SidebarProps) {
             title: "Strategy Lab",
             href: "/dashboard/strategy-lab",
             icon: FlaskConical
+        },
+        {
+            title: "Explorer",
+            href: "/dashboard/explorer",
+            icon: Globe
         },
         {
             title: "Live Trading",

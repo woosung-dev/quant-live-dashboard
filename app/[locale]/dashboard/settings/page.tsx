@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card';
-import { ExchangeManager } from '@/components/settings/ExchangeManager';
+import { ApiKeyManager } from '@/features/trade/components/ApiKeyManager';
 
 export default function SettingsPage() {
     return (
@@ -8,7 +8,7 @@ export default function SettingsPage() {
 
             {/* API Keys */}
             <section>
-                <ExchangeManager />
+                <ApiKeyManager />
             </section>
 
             {/* Notifications */}
