@@ -6,6 +6,13 @@ import { AlertConfig, sendAlert } from "./notification";
 
 export interface RealtimeConfig extends BacktestConfig {
     intervalSeconds?: number;
+    executionMode?: 'PAPER' | 'LIVE';
+}
+
+export interface TradeRequest {
+    symbol: string;
+    side: 'buy' | 'sell';
+    quantity?: number; // Optional, logic to handle sizing should be elsewhere or here
 }
 
 export type RealtimeStatus = 'idle' | 'running' | 'error';
@@ -15,6 +22,7 @@ export interface RealtimeState {
     lastCandleTime: number;
     lastSignalTime: number;
     logs: string[];
+    executionMode: 'PAPER' | 'LIVE';
 }
 
 type VerificationCallback = (log: string) => void;
@@ -30,13 +38,19 @@ export class RealtimeRunner {
         status: 'idle',
         lastCandleTime: 0,
         lastSignalTime: 0,
-        logs: []
+        logs: [],
+        executionMode: 'PAPER'
     };
 
     private onUpdate: ((state: RealtimeState) => void) | null = null;
+    private onTrade: ((req: TradeRequest) => Promise<void>) | null = null;
 
-    constructor(onUpdate?: (state: RealtimeState) => void) {
+    constructor(
+        onUpdate?: (state: RealtimeState) => void,
+        onTrade?: (req: TradeRequest) => Promise<void>
+    ) {
         this.onUpdate = onUpdate || null;
+        this.onTrade = onTrade || null;
     }
 
     public start(
@@ -56,7 +70,8 @@ export class RealtimeRunner {
             status: 'running',
             lastCandleTime: 0,
             lastSignalTime: 0,
-            logs: [`Started strategy: ${strategy.name} on ${config.symbol}`]
+            logs: [`Started strategy: ${strategy.name} on ${config.symbol} (${config.executionMode || 'PAPER'})`],
+            executionMode: config.executionMode || 'PAPER'
         };
         this.notifyUpdate();
 
@@ -113,11 +128,13 @@ export class RealtimeRunner {
                     signals = result.signals;
                 }
             } else {
-                // Not supported yet for non-pine in this specific runner wrapper unless we adapt them
-                // But generally strategy.execute(candles) works
-                // Wait, strategy.execute returns { signals }.
-                const result = this.strategy.execute(candles, this.params);
-                signals = result.signals;
+                if (this.strategy.execute) {
+                    const result = this.strategy.execute(candles, this.params);
+                    signals = result.signals;
+                } else {
+                    console.warn(`Strategy ${this.strategy.name} has no execute method.`);
+                    signals = [];
+                }
             }
 
             // 3. Process Signals
@@ -141,6 +158,19 @@ export class RealtimeRunner {
                             time: lastSignal.time
                         });
                         this.log(`Alert sent.`);
+                    }
+
+                    // EXECUTE TRADE (LIVE MODE)
+                    if (this.config?.executionMode === 'LIVE' && this.onTrade) {
+                        this.log(`🚀 EXECUTING LIVE TRADE: ${lastSignal.type.toUpperCase()}`);
+                        await this.onTrade({
+                            symbol: this.config.symbol,
+                            side: lastSignal.type,
+                            // Quantity logic needs to be defined. For MVP, use default fixed size?
+                            // Or strategy should provide it.
+                            // For now let the callback handle default sizing.
+                        });
+                        this.log(`Trade Execution Requested.`);
                     }
 
                 }
