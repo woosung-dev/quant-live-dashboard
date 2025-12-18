@@ -17,9 +17,47 @@ interface TranspilerResult {
 }
 
 export function transpilePineScript(script: string): TranspilerResult {
-    // 0. Pre-process: Merge multi-line statements
+    // 0. Pre-process: Sanitize Reserved Keywords
+    // Pine Script allows variable names that are reserved in JS (e.g. 'new', 'class', 'function')
+    const reservedMap: Record<string, string> = {
+        'new': '_new',
+        'class': '_class',
+        'function': '_function',
+        'void': '_void',
+        'delete': '_delete',
+        'in': '_in',
+        'instanceof': '_instanceof',
+        'typeof': '_typeof',
+        'this': '_this',
+        'super': '_super',
+        'export': '_export',
+        'extends': '_extends',
+        'import': '_import',
+        'yield': '_yield',
+        'debugger': '_debugger',
+        'volatile': '_volatile',
+        'static': '_static',
+        // 'try', 'catch', 'throw', 'finally' -> used in logic? Pine doesn't use them.
+        'try': '_try',
+        'catch': '_catch',
+        'throw': '_throw',
+        'finally': '_finally',
+        'long': '_long',
+        'short': '_short',
+    };
+
+    // Replace whole words only, avoiding object properties (preceded by dot)
+    let sanitizedScript = script;
+    for (const [key, val] of Object.entries(reservedMap)) {
+        // Regex: negative lookbehind for dot, word boundary, key, word boundary. Global.
+        // Avoid replacing inside strings? A bit complex, but for MVP simple replacement is mostly safe as vars.
+        // Note: Pine Script doesn't use 'new' as operator.
+        sanitizedScript = sanitizedScript.replace(new RegExp(`(?<!\\.)\\b${key}\\b`, 'g'), val);
+    }
+
+    // 0.1. Pre-process: Merge multi-line statements
     // Heuristic: If a line ends with an operator, merge next line.
-    let lines = script.split('\n');
+    let lines = sanitizedScript.split('\n');
     const mergedLines: string[] = [];
     let buffer = "";
 
@@ -140,8 +178,72 @@ export function transpilePineScript(script: string): TranspilerResult {
             } else {
                 line = trimmedLine;
             }
+        } else if (trimmedLine.startsWith('else if ')) {
+            // Handle 'else if'
+            if (!trimmedLine.match(/^else\s+if\s*\(/)) {
+                line = trimmedLine.replace(/^else\s+if\s+(.*)/, 'else if ($1)');
+            } else {
+                line = trimmedLine;
+            }
+        } else if (trimmedLine.match(/^\s*switch\s+/)) {
+            // Handle Pine switch statement
+            // varName = switch expr  ->  let varName; switch (expr)
+            const switchMatch = trimmedLine.match(/^([a-zA-Z0-9_]+)\s*=\s*switch\s+(.+)/);
+            if (switchMatch) {
+                const [, varName, expr] = switchMatch;
+                line = `let ${varName}; switch (${expr})`;
+            } else {
+                // Regular switch
+                line = trimmedLine.replace(/^switch\s+(.*)/, 'switch ($1)');
+            }
+        } else if (trimmedLine.match(/^'[^']+'\s*=>/)) {
+            // Pine switch case: 'Value' => expression
+            const caseMatch = trimmedLine.match(/^'([^']+)'\s*=>\s*(.*)/);
+            if (caseMatch) {
+                const [, caseVal, expr] = caseMatch;
+                // Get the switch variable from context (simplified - use previous line variable)
+                line = `case '${caseVal}': { const _switchResult = ${expr}; break; }`;
+            }
+        } else if (trimmedLine.match(/^"[^"]+"\s*=>/)) {
+            // Double-quoted case
+            const caseMatch = trimmedLine.match(/^"([^"]+)"\s*=>\s*(.*)/);
+            if (caseMatch) {
+                const [, caseVal, expr] = caseMatch;
+                line = `case "${caseVal}": { const _switchResult = ${expr}; break; }`;
+            }
         } else {
             line = trimmedLine;
+        }
+
+        // 2.1 Handle Pine Type Declarations (var bool x = ...) -> (var x = ...)
+        // Types: bool, int, float, string, color
+        // Keywords: var, varip
+        // Logic: 
+        // "var bool x =" -> "var x ="
+        // "bool x =" -> "let x =" (assume local if not var)
+        // "x =" -> handled by Trap Assignment later
+
+        // Regex to capture optional var/varip and type, followed by identifier and =
+        // We use replace to strip the type and normalize var/let.
+        // Note: Reserved keywords like 'long' are already sanitized to '_long' by step 0.
+        // So we might see "var bool _long ="
+
+        const typeDeclRegex = /^\s*(varip|var)?\s*(bool|int|float|string|color|line|label|box|table)\s+([a-zA-Z0-9_]+)\s*(=|:=)/;
+        const typeMatch = line.match(typeDeclRegex);
+        if (typeMatch) {
+            const [full, keyword, type, varName, op] = typeMatch;
+            const jsKeyword = (keyword === 'var' || keyword === 'varip') ? 'var' : 'let';
+            // Reconstruct line without type
+            // preserved indentation? line is trimmed here, but we append to processedScript? 
+            // processedScript structure uses 'line', which is indentation-stripped? 
+            // No, processedScript reconstructs blocks.
+            // But we modified 'line' variable. 'line' is used later.
+            // We should modify 'line' correctly.
+
+            // Rewrite the start of the line
+            // We need to keep the rest of the expression.
+            // Replace the matched declaration part.
+            line = line.replace(typeDeclRegex, `${jsKeyword} ${varName} ${op}`);
         }
 
         // Color Literals: #RRGGBB -> '#RRGGBB'
@@ -156,11 +258,33 @@ export function transpilePineScript(script: string): TranspilerResult {
         line = line.replace(/(?<!ta\.)\bmacd\(/g, 'ta.macd(');
         line = line.replace(/(?<!ta\.)\bavg\(/g, '_pine_avg(');
 
-        // Rewrite cross/crossover/crossunder to use _cross helper IF arguments are simple identifiers
-        // crossover(a, b) -> _cross(1, 'a', 'b', i)
-        line = line.replace(/\bcrossover\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)/g, "_cross(1, '$1', '$2', i)");
-        line = line.replace(/\bcrossunder\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)/g, "_cross(-1, '$1', '$2', i)");
-        line = line.replace(/\bcross\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)/g, "_cross(0, '$1', '$2', i)");
+        // Rewrite cross/crossover/crossunder to use _crossValue helper for numeric comparisons
+        // crossover(a, 0.5) -> _crossValue(1, 'a', 0.5, i)
+        // crossover(a, b) -> _crossValue(1, 'a', b, i) where b could be var or number
+        // More permissive pattern: allow any expression as second arg
+        line = line.replace(/\bcrossover\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([^)]+)\s*\)/g, (match, a, b) => {
+            const bTrimmed = b.trim();
+            // Check if b is a number literal
+            if (/^[0-9.]+$/.test(bTrimmed)) {
+                return `_crossValue(1, '${a}', ${bTrimmed}, i)`;
+            }
+            // Otherwise it's a variable
+            return `_crossValue(1, '${a}', '${bTrimmed}', i)`;
+        });
+        line = line.replace(/\bcrossunder\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([^)]+)\s*\)/g, (match, a, b) => {
+            const bTrimmed = b.trim();
+            if (/^[0-9.]+$/.test(bTrimmed)) {
+                return `_crossValue(-1, '${a}', ${bTrimmed}, i)`;
+            }
+            return `_crossValue(-1, '${a}', '${bTrimmed}', i)`;
+        });
+        line = line.replace(/\bcross\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([^)]+)\s*\)/g, (match, a, b) => {
+            const bTrimmed = b.trim();
+            if (/^[0-9.]+$/.test(bTrimmed)) {
+                return `_crossValue(0, '${a}', ${bTrimmed}, i)`;
+            }
+            return `_crossValue(0, '${a}', '${bTrimmed}', i)`;
+        });
 
         // Map remaining cross calls to ta.cross (fallback, likely won't work well without history but valid syntactically)
         line = line.replace(/(?<!ta\.|_)\bcrossover\(/g, 'ta.crossover(');
@@ -250,15 +374,73 @@ export function transpilePineScript(script: string): TranspilerResult {
             }
         }
 
-        // Clean Visuals and Inputs
+        // Convert alertcondition() to trading signals
+        // alertcondition(condition, "Title", "Message") -> if (condition) signal
+        const alertMatch = line.match(/^\s*alertcondition\s*\(\s*([^,]+)\s*,\s*['"]([^'"]+)['"]/);
+        if (alertMatch) {
+            const [, condition, title] = alertMatch;
+            // Determine signal type from title keywords
+            const titleLower = title.toLowerCase();
+            let signalType = 'buy'; // default
+            if (titleLower.includes('sell') || titleLower.includes('short') ||
+                titleLower.includes('bearish') || titleLower.includes('down') ||
+                titleLower.includes('bear')) {
+                signalType = 'sell';
+            } else if (titleLower.includes('buy') || titleLower.includes('long') ||
+                titleLower.includes('bullish') || titleLower.includes('up') ||
+                titleLower.includes('bull')) {
+                signalType = 'buy';
+            }
+            // Generate signal code
+            line = `if (${condition}) { signals.push({ time: candles[i].time, type: '${signalType}', price: candles[i].close, reason: '${title}' }); }`;
+        }
+
+        // Convert plotshape() to trading signals when it contains signal-like patterns
+        // plotshape(condition ? value : na, "Title"...) -> if (condition) signal
+        const plotshapeMatch = line.match(/^\s*plotshape\s*\(\s*([^?]+)\s*\?\s*[^:]+\s*:\s*na\s*,\s*['"]([^'"]+)['"]/);
+        if (plotshapeMatch) {
+            const [, condition, title] = plotshapeMatch;
+            const titleLower = title.toLowerCase();
+            let signalType = 'buy'; // default
+            if (titleLower.includes('sell') || titleLower.includes('short') ||
+                titleLower.includes('bearish') || titleLower.includes('down') ||
+                titleLower.includes('bear') || titleLower.includes('lower')) {
+                signalType = 'sell';
+            } else if (titleLower.includes('buy') || titleLower.includes('long') ||
+                titleLower.includes('bullish') || titleLower.includes('up') ||
+                titleLower.includes('bull') || titleLower.includes('upper')) {
+                signalType = 'buy';
+            }
+            line = `if (${condition.trim()}) { signals.push({ time: candles[i].time, type: '${signalType}', price: candles[i].close, reason: '${title}' }); }`;
+        } else if (line.match(/^\s*plotshape\s*\(/)) {
+            // Skip other plotshape calls that don't match the signal pattern
+            continue;
+        }
+
+        // Clean other Visuals and Inputs
         if (
             line.match(/^\s*plot\s*\(/) ||
             line.match(/^\s*hline\s*\(/) ||
             line.match(/^\s*fill\s*\(/) ||
             line.match(/^\s*bgcolor\s*\(/) ||
             line.match(/^\s*barcolor\s*\(/) ||
-            line.match(/^\s*plotshape\s*\(/)
+            line.match(/^\s*plotcandle\s*\(/) ||
+            line.match(/^\s*plotarrow\s*\(/) ||
+            line.match(/^\s*plotbar\s*\(/) ||
+            line.match(/^\s*plotchar\s*\(/) ||
+            line.match(/^\s*table\.cell\s*\(/) ||
+            line.match(/^\s*table\.new\s*\(/)
         ) {
+            continue;
+        }
+
+        // Skip import statements (Pine Script v5/v6 library imports)
+        if (line.match(/^\s*import\s+/)) {
+            continue;
+        }
+
+        // Skip indicator() and study() declarations
+        if (line.startsWith('indicator(') || line.startsWith('indicator ')) {
             continue;
         }
         if (line.startsWith('study(') || line.startsWith('strategy(') || line.startsWith('strategy ')) {
@@ -290,14 +472,93 @@ export function transpilePineScript(script: string): TranspilerResult {
             let [_, varName, argsStr] = inputMatch;
             let defVal = "";
 
-            const defValMatch = argsStr.match(/defval\s*=\s*([^,)]+)/);
-            if (defValMatch) {
-                defVal = defValMatch[1].trim();
+            // Helper to extract named arg value respecting parentheses
+            const extractArg = (key: string) => {
+                const keyPattern = key + '=';
+                let idx = argsStr.indexOf(keyPattern);
+                if (idx === -1) {
+                    // Try with spaces? "defval ="
+                    const match = argsStr.match(new RegExp(key + '\\s*=\\s*'));
+                    if (!match) return null;
+                    idx = match.index! + match[0].length;
+                } else {
+                    idx += keyPattern.length;
+                }
+
+                let value = "";
+                let depth = 0;
+                let inString = false;
+                let stringChar = '';
+
+                for (let i = idx; i < argsStr.length; i++) {
+                    const c = argsStr[i];
+                    if (inString) {
+                        if (c === stringChar && argsStr[i - 1] !== '\\') inString = false;
+                        value += c;
+                    } else {
+                        if (c === '"' || c === "'") {
+                            inString = true;
+                            stringChar = c;
+                            value += c;
+                        } else if (c === '(' || c === '[' || c === '{') {
+                            depth++;
+                            value += c;
+                        } else if (c === ')' || c === ']' || c === '}') {
+                            if (depth > 0) depth--;
+                            else if (depth === 0) break; // Should not happen in valid inside-arg string usually, or end of expression
+                            value += c;
+                        } else if (c === ',' && depth === 0) {
+                            break;
+                        } else {
+                            value += c;
+                        }
+                    }
+                }
+                return value.trim();
+            };
+
+            const namedDefVal = extractArg('defval');
+            if (namedDefVal) {
+                defVal = namedDefVal;
             } else {
-                const firstComma = argsStr.indexOf(',');
-                const firstArg = firstComma === -1 ? argsStr.trim() : argsStr.substring(0, firstComma).trim();
-                if (!firstArg.includes('=')) {
-                    defVal = firstArg;
+                // Positional: First argument if not named
+                // We need to parse first arg similarly (scan until first comma at depth 0)
+                let value = "";
+                let depth = 0;
+                let inString = false;
+                let stringChar = '';
+
+                // If it starts with name=..., then it is named, so positional is invalid?
+                // Pine allows mixing? Usually positional comes first. 
+                // If first char implies named arg "title=...", then no positional.
+                // Simple check: does it look like "name="?
+                const isNamedStart = /^[a-zA-Z0-9_]+\s*=/.test(argsStr);
+
+                if (!isNamedStart) {
+                    for (let i = 0; i < argsStr.length; i++) {
+                        const c = argsStr[i];
+                        if (inString) {
+                            if (c === stringChar && argsStr[i - 1] !== '\\') inString = false;
+                            value += c;
+                        } else {
+                            if (c === '"' || c === "'") {
+                                inString = true;
+                                stringChar = c;
+                                value += c;
+                            } else if (c === '(' || c === '[') { // inputs use () sometimes
+                                depth++;
+                                value += c;
+                            } else if (c === ')' || c === ']') {
+                                depth--;
+                                value += c;
+                            } else if (c === ',' && depth === 0) {
+                                break;
+                            } else {
+                                value += c;
+                            }
+                        }
+                    }
+                    if (value.trim()) defVal = value.trim();
                 }
             }
 
@@ -412,8 +673,10 @@ export function transpilePineScript(script: string): TranspilerResult {
         // Note: 'time' is NOT replaced here. Runner provides 'time' in milliseconds.
 
         // Operators
-        line = line.replace(/\s+and\s+/g, ' && ');
-        line = line.replace(/\s+or\s+/g, ' || ');
+        // Use word boundaries to catch 'or' even if followed by non-whitespace (like comma or parens)
+        // Be careful of strings, but usually fine for simple scripts
+        line = line.replace(/\band\b/g, '&&');
+        line = line.replace(/\bor\b/g, '||');
 
         processedScript += line + (seriesUpdate ? `\n${seriesUpdate}` : '') + '\n';
     }
