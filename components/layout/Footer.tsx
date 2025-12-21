@@ -11,10 +11,12 @@ export const Footer = () => {
                     {/* Brand */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold tracking-tighter">
-                            QUANT<span className="text-primary">.LIVE</span>
+                            QUANT<span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">.LIVE</span>
                         </h3>
-                        <p className="text-sm text-gray-400 leading-relaxed">
-                            실시간 트레이딩 전략 백테스트 플랫폼
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            실시간 퀀트 트레이딩 플랫폼
+                            <br />
+                            전략 검증부터 자동 매매까지
                         </p>
                     </div>
 

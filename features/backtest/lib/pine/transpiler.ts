@@ -1,6 +1,10 @@
 /**
  * Pine Script "Lite" Transpiler
  * Converts simple Pine Script syntax into an executable JavaScript function body.
+ * 
+ * @param script - Pine Script source code
+ * @returns TranspilerResult with generated JavaScript code and indicator definitions
+ * @throws Never throws - returns empty result on error for stability
  */
 
 import { PINE_INDICATORS } from './indicators';
@@ -14,9 +18,26 @@ interface TranspilerResult {
         assignTo?: string; // (Optional) original variable name
         isObjectDestructure?: boolean;
     }[];
+    error?: string; // Error message if transpilation failed
 }
 
+/**
+ * Safe wrapper for transpilePineScript that catches all errors
+ */
 export function transpilePineScript(script: string): TranspilerResult {
+    try {
+        return transpilePineScriptInternal(script);
+    } catch (error) {
+        console.error('[Transpiler] Fatal error during transpilation:', error);
+        return {
+            jsCode: '// Transpilation failed - see console for details',
+            indicators: [],
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+}
+
+function transpilePineScriptInternal(script: string): TranspilerResult {
     // 0. Pre-process: Sanitize Reserved Keywords
     // Pine Script allows variable names that are reserved in JS (e.g. 'new', 'class', 'function')
     const reservedMap: Record<string, string> = {

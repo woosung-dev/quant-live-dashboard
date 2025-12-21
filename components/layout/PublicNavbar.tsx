@@ -27,11 +27,11 @@ export const PublicNavbar = () => {
             <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <TrendingUp className="text-black" size={20} />
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <TrendingUp className="text-white" size={20} />
                     </div>
                     <span className="text-xl font-bold tracking-tighter">
-                        QUANT<span className="text-primary">.LIVE</span>
+                        QUANT<span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">.LIVE</span>
                     </span>
                 </Link>
 
@@ -62,7 +62,7 @@ export const PublicNavbar = () => {
                     {user ? (
                         <Link
                             href="/dashboard"
-                            className="px-4 py-2 bg-primary text-black font-bold text-sm rounded-lg hover:bg-opacity-90 transition-all shadow-[0_0_10px_rgba(0,255,148,0.3)]"
+                            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-sm rounded-lg hover:opacity-90 transition-all shadow-lg shadow-emerald-500/20"
                         >
                             Go to Dashboard
                         </Link>
@@ -76,7 +76,7 @@ export const PublicNavbar = () => {
                             </Link>
                             <Link
                                 href="/signup"
-                                className="px-4 py-2 bg-primary text-black font-bold text-sm rounded-lg hover:bg-opacity-90 transition-all"
+                                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-sm rounded-lg hover:opacity-90 transition-all shadow-lg shadow-emerald-500/20"
                             >
                                 Sign Up
                             </Link>
