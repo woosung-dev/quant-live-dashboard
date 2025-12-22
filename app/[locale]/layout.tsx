@@ -3,7 +3,6 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { ThemeProvider } from "@/components/theme-provider"
-import { Navbar } from "@/components/layout/Navbar"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css";
 import type { Metadata } from "next";
@@ -49,7 +48,6 @@ export default async function LocaleLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <Navbar />
             {children}
             <Toaster />
           </ThemeProvider>
@@ -58,3 +56,4 @@ export default async function LocaleLayout({
     </html>
   );
 }
+

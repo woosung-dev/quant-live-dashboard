@@ -29,7 +29,12 @@ export const useWebSocket = (symbols: string | string[] = 'btcusdt') => {
     const isSingle = !Array.isArray(symbols);
 
     useEffect(() => {
+        let reconnectTimeout: NodeJS.Timeout | null = null;
+        let isUnmounting = false;
+
         const connect = () => {
+            if (isUnmounting) return;
+
             // Construct Combined Stream URL
             // Format: wss://stream.binance.com:9443/stream?streams=<streamName1>/<streamName2>/...
             // Stream name: <symbol>@trade
@@ -55,19 +60,25 @@ export const useWebSocket = (symbols: string | string[] = 'btcusdt') => {
                         }));
                     }
                 } catch (e) {
-                    console.error('Error parsing WS message', e);
+                    console.warn('Error parsing WS message', e);
                 }
             };
 
-            socket.onclose = () => {
+            socket.onclose = (event) => {
                 setIsConnected(false);
-                console.log('WebSocket Disconnected');
-                // Simple reconnection logic
-                setTimeout(connect, 3000);
+                // Only log and reconnect if not intentionally closing
+                if (!isUnmounting) {
+                    // Don't spam console on navigation/refresh
+                    if (event.code !== 1000 && event.code !== 1001) {
+                        console.log('WebSocket Disconnected, reconnecting...');
+                    }
+                    reconnectTimeout = setTimeout(connect, 3000);
+                }
             };
 
-            socket.onerror = (error) => {
-                console.error('WebSocket Error:', error);
+            socket.onerror = () => {
+                // Errors are already handled by onclose, just silence the error event
+                // This prevents console spam during page navigation/refresh
             };
 
             ws.current = socket;
@@ -76,8 +87,12 @@ export const useWebSocket = (symbols: string | string[] = 'btcusdt') => {
         connect();
 
         return () => {
+            isUnmounting = true;
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+            }
             if (ws.current) {
-                ws.current.close();
+                ws.current.close(1000, 'Component unmounting');
             }
         };
     }, [JSON.stringify(symbolList)]); // Re-connect if symbol list changes

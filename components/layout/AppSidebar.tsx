@@ -109,7 +109,7 @@ export function AppSidebar({ className }: SidebarProps) {
             {/* Footer */}
             <div className="p-4 border-t space-y-2">
                 <div className={cn("flex items-center gap-2", collapsed ? "flex-col" : "justify-between")}>
-                    <ThemeToggle />
+                    <div></div>
                     <Button variant="outline" size="icon" onClick={() => setCollapsed(!collapsed)} className="hidden md:flex">
                         <ChevronRight className={cn("w-4 h-4 transition-transform", !collapsed && "rotate-180")} />
                     </Button>
