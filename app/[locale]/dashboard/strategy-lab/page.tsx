@@ -79,6 +79,10 @@ export default function StrategyLabPage() {
     const [symbol, setSymbol] = useState<string>(DEFAULT_CONFIG.symbol);
     const [timeframe, setTimeframe] = useState<Timeframe>(DEFAULT_CONFIG.timeframe);
 
+    // Date Range State (for custom period backtesting)
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
+
     // Strategy State
     const [selectedStrategyId, setSelectedStrategyId] = useState<string>(defaultStrategy.id);
     const [strategyParams, setStrategyParams] = useState<Record<string, any>>({});
@@ -184,6 +188,8 @@ export default function StrategyLabPage() {
                 timeframe,
                 initialCapital: DEFAULT_CONFIG.initialCapital,
                 limit: 1000,
+                ...(startDate && { startDate: new Date(startDate) }),
+                ...(endDate && { endDate: new Date(endDate) }),
             };
 
             const result = await runBacktest(config, selectedStrategy, strategyParams);
@@ -425,6 +431,37 @@ export default function StrategyLabPage() {
                                     </SelectContent>
                                 </Select>
                                 <TimeframeSelector selectedTimeframe={timeframe} onSelect={setTimeframe} />
+
+                                {/* Date Range Picker */}
+                                <div className="space-y-2 pt-2">
+                                    <label className="text-xs font-medium text-muted-foreground">Date Range (Optional)</label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                            placeholder="Start"
+                                            className="h-9 bg-background/50 text-xs"
+                                        />
+                                        <Input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                            placeholder="End"
+                                            className="h-9 bg-background/50 text-xs"
+                                        />
+                                    </div>
+                                    {(startDate || endDate) && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-xs h-6 px-2"
+                                            onClick={() => { setStartDate(''); setEndDate(''); }}
+                                        >
+                                            Clear dates
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

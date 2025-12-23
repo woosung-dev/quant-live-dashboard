@@ -22,6 +22,104 @@ import { runPineScript } from './pine/runner';
 const BINANCE_API_BASE = 'https://api.binance.com/api/v3';
 
 /**
+ * 하이브리드 캔들 로딩: DB + API 병합
+ * @description 히스토리컬 데이터는 캐시에서, 최신 데이터는 API에서 가져와 병합
+ * @param symbol - 거래쌍 (예: BTCUSDT)
+ * @param timeframe - 타임프레임 (예: 1h, 4h, 1d)
+ * @param startDate - 시작 날짜
+ * @param endDate - 종료 날짜 (기본: 현재)
+ */
+export async function fetchCandlesWithDateRange(
+    symbol: string,
+    timeframe: Timeframe,
+    startDate: Date,
+    endDate: Date = new Date()
+): Promise<Candle[]> {
+    const startTime = startDate.getTime();
+    const endTime = endDate.getTime();
+    const now = Date.now();
+
+    // 오늘 자정 (UTC 기준)
+    const todayMidnight = new Date();
+    todayMidnight.setUTCHours(0, 0, 0, 0);
+    const todayStart = todayMidnight.getTime();
+
+    console.log(`[Hybrid] Fetching ${symbol}/${timeframe} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
+    const allCandles: Candle[] = [];
+
+    // 1. 히스토리컬 데이터 (어제까지): DB에서 조회
+    if (startTime < todayStart) {
+        const historicalEndTime = Math.min(endTime, todayStart - 1);
+
+        try {
+            const { data: cachedData, error } = await supabase
+                .from('candle_cache')
+                .select('*')
+                .eq('symbol', symbol)
+                .eq('timeframe', timeframe)
+                .gte('time', Math.floor(startTime / 1000))
+                .lte('time', Math.floor(historicalEndTime / 1000))
+                .order('time', { ascending: true });
+
+            if (!error && cachedData && cachedData.length > 0) {
+                const historicalCandles = cachedData.map(c => ({
+                    time: Number(c.time),
+                    open: Number(c.open),
+                    high: Number(c.high),
+                    low: Number(c.low),
+                    close: Number(c.close),
+                    volume: Number(c.volume)
+                }));
+                allCandles.push(...historicalCandles);
+                console.log(`[Hybrid] DB cache: ${historicalCandles.length} candles`);
+            } else if (error) {
+                console.warn('[Hybrid] DB cache error:', error);
+            }
+        } catch (e) {
+            console.warn('[Hybrid] DB cache exception:', e);
+        }
+    }
+
+    // 2. 최신 데이터 (오늘): API에서 실시간 조회
+    if (endTime >= todayStart) {
+        const apiStartTime = Math.max(startTime, todayStart);
+
+        try {
+            const interval = TIMEFRAME_MAP[timeframe];
+            const params = new URLSearchParams({
+                symbol: symbol.toUpperCase(),
+                interval,
+                startTime: apiStartTime.toString(),
+                endTime: endTime.toString(),
+                limit: '1000',
+            });
+
+            const response = await fetch(`${BINANCE_API_BASE}/klines?${params.toString()}`);
+
+            if (response.ok) {
+                const data: BinanceKline[] = await response.json();
+                const realtimeCandles = data.map(transformKlineToCandle);
+                allCandles.push(...realtimeCandles);
+                console.log(`[Hybrid] API realtime: ${realtimeCandles.length} candles`);
+            }
+        } catch (e) {
+            console.warn('[Hybrid] API fetch error:', e);
+        }
+    }
+
+    // 3. 중복 제거 및 정렬
+    const uniqueCandles = Array.from(
+        new Map(allCandles.map(c => [c.time, c])).values()
+    ).sort((a, b) => a.time - b.time);
+
+    console.log(`[Hybrid] Total: ${uniqueCandles.length} unique candles`);
+
+    return uniqueCandles;
+}
+
+
+/**
  * Binance API에서 캔들 데이터를 가져옵니다.
  * @param symbol - 거래쌍 (예: BTCUSDT)
  * @param timeframe - 타임프레임 (예: 1h, 4h, 1d)
@@ -378,13 +476,34 @@ export async function runBacktest(
 ): Promise<BacktestResult> {
     const startTime = performance.now();
 
-    // 1. 캔들 데이터 가져오기
-    const candles = await fetchCandles(
-        config.symbol,
-        config.timeframe,
-        config.limit || 1000,
-        config.endDate?.getTime()
-    );
+    // 1. 캔들 데이터 가져오기 (하이브리드 방식)
+    let candles: Candle[];
+
+    if (config.startDate && config.endDate) {
+        // 날짜 범위가 지정된 경우: 하이브리드 로딩 (DB + API)
+        candles = await fetchCandlesWithDateRange(
+            config.symbol,
+            config.timeframe,
+            config.startDate,
+            config.endDate
+        );
+    } else if (config.startDate) {
+        // 시작 날짜만 지정된 경우
+        candles = await fetchCandlesWithDateRange(
+            config.symbol,
+            config.timeframe,
+            config.startDate,
+            new Date()
+        );
+    } else {
+        // 기존 방식: 최신 N개 캔들
+        candles = await fetchCandles(
+            config.symbol,
+            config.timeframe,
+            config.limit || 1000,
+            config.endDate?.getTime()
+        );
+    }
 
     // 2. 전략 실행하여 시그널 생성
     let signals: Signal[] = [];

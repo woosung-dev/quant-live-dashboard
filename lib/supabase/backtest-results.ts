@@ -66,7 +66,7 @@ export async function saveBacktestResult(
                 initial_capital: data.initialCapital,
                 metrics: data.metrics,
                 trades: data.trades,
-            })
+            } as any)
             .select('id')
             .single();
 
@@ -75,7 +75,7 @@ export async function saveBacktestResult(
             return { error: error.message };
         }
 
-        return { id: result.id };
+        return { id: (result as any).id };
     } catch (e) {
         console.error('[BacktestStorage] Unexpected error:', e);
         return { error: e instanceof Error ? e.message : 'Unknown error' };
@@ -161,18 +161,18 @@ export async function getBacktestResult(
         }
 
         return {
-            id: data.id,
-            userId: data.user_id,
-            strategyName: data.strategy_name,
-            strategyCode: data.strategy_code,
-            symbol: data.symbol,
-            timeframe: data.timeframe,
-            startDate: new Date(data.start_date),
-            endDate: new Date(data.end_date),
-            initialCapital: data.initial_capital,
-            metrics: data.metrics,
-            trades: data.trades,
-            createdAt: new Date(data.created_at),
+            id: (data as any).id,
+            userId: (data as any).user_id,
+            strategyName: (data as any).strategy_name,
+            strategyCode: (data as any).strategy_code,
+            symbol: (data as any).symbol,
+            timeframe: (data as any).timeframe,
+            startDate: new Date((data as any).start_date),
+            endDate: new Date((data as any).end_date),
+            initialCapital: (data as any).initial_capital,
+            metrics: (data as any).metrics,
+            trades: (data as any).trades,
+            createdAt: new Date((data as any).created_at),
         };
     } catch (e) {
         return { error: e instanceof Error ? e.message : 'Unknown error' };
