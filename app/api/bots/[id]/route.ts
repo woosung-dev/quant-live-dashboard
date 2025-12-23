@@ -1,6 +1,40 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+export async function GET(
+    req: NextRequest,
+    context: { params: Promise<{ id: string }> }
+) {
+    const { id } = await context.params;
+    const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data, error } = await supabase
+        .from('bot_instances')
+        .select(`
+            *,
+            strategy:strategies(name),
+            bot_state(*)
+        `)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!data) {
+        return NextResponse.json({ error: 'Bot not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ bot: data });
+}
+
 export async function DELETE(
     req: NextRequest,
     context: { params: Promise<{ id: string }> } // Next.js 15+ async params
