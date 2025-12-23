@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Bell, Webhook, Save } from 'lucide-react';
+import { Bell, Webhook, Send } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AlertConfig, sendBrowserNotification } from '@/features/backtest/lib/realtime/notification';
 import { toast } from 'sonner';
 
@@ -29,6 +30,7 @@ export function AlertSettings({ defaultConfig, onSave }: AlertSettingsProps = {}
     const [config, setConfig] = useState<AlertConfig>({
         type: 'webhook',
         url: '',
+        chatId: '',
         enableBrowser: false,
         ...defaultConfig
     });
@@ -62,10 +64,34 @@ export function AlertSettings({ defaultConfig, onSave }: AlertSettingsProps = {}
     };
 
     const testNotification = async () => {
+        // Browser notification test
         if (config.enableBrowser) {
             await sendBrowserNotification('Test Notification', 'This is a test notification from Quant Live.');
         }
-        toast.info('Test alert triggered');
+
+        // Telegram notification test
+        if (config.type === 'telegram' && config.chatId) {
+            try {
+                const response = await fetch('/api/notifications/test-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chatId: config.chatId }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    toast.success('Telegram test message sent!');
+                } else {
+                    toast.error(`Telegram test failed: ${result.error}`);
+                }
+            } catch (error) {
+                toast.error('Failed to send telegram test');
+                console.error(error);
+            }
+        } else {
+            toast.info('Test alert triggered');
+        }
     };
 
     return (
@@ -100,28 +126,61 @@ export function AlertSettings({ defaultConfig, onSave }: AlertSettingsProps = {}
                         />
                     </div>
 
-                    {/* Webhook Notifications */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between space-x-2">
-                            <div className="space-y-0.5">
-                                <Label className="text-base flex items-center gap-2">
-                                    <Webhook className="w-4 h-4" /> Webhook Integration
+                    {/* Notification Type Selection */}
+                    <div className="space-y-3">
+                        <Label className="text-base">Notification Channel</Label>
+                        <RadioGroup
+                            value={config.type}
+                            onValueChange={(value: 'webhook' | 'telegram') => setConfig({ ...config, type: value })}
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="webhook" id="webhook" />
+                                <Label htmlFor="webhook" className="flex items-center gap-2 cursor-pointer">
+                                    <Webhook className="w-4 h-4" />
+                                    Webhook (Discord/Slack)
                                 </Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Send alerts to Discord/Slack.
-                                </p>
                             </div>
-                        </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="telegram" id="telegram" />
+                                <Label htmlFor="telegram" className="flex items-center gap-2 cursor-pointer">
+                                    <Send className="w-4 h-4" />
+                                    Telegram
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+
+                    {/* Webhook URL */}
+                    {config.type === 'webhook' && (
                         <div className="space-y-2">
                             <Label htmlFor="webhook-url">Webhook URL</Label>
                             <Input
                                 id="webhook-url"
                                 placeholder="https://discord.com/api/webhooks/..."
-                                value={config.url}
+                                value={config.url || ''}
                                 onChange={(e) => setConfig({ ...config, url: e.target.value })}
                             />
                         </div>
-                    </div>
+                    )}
+
+                    {/* Telegram Chat ID */}
+                    {config.type === 'telegram' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="chat-id">Telegram Chat ID</Label>
+                            <Input
+                                id="chat-id"
+                                placeholder="123456789"
+                                value={config.chatId || ''}
+                                onChange={(e) => setConfig({ ...config, chatId: e.target.value })}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Send a message to your bot and get Chat ID from{' '}
+                                <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                                    https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates
+                                </code>
+                            </p>
+                        </div>
+                    )}
                 </div>
                 <div className="flex justify-between">
                     <Button variant="outline" onClick={testNotification}>Test Alert</Button>

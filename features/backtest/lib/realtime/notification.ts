@@ -1,7 +1,8 @@
 
 export interface AlertConfig {
-    type: 'webhook';
-    url: string;
+    type: 'webhook' | 'telegram';
+    url?: string;              // For webhook
+    chatId?: string;           // For telegram
     enableBrowser?: boolean;
     messageTemplate?: string; // e.g. "Signal {{type}} at {{price}}"
 }
@@ -45,8 +46,13 @@ export async function sendAlert(config: AlertConfig, payload: AlertPayload): Pro
         promises.push(sendBrowserNotification(title, body));
     }
 
+    // Telegram Notification
+    if (config.type === 'telegram' && config.chatId) {
+        promises.push(sendTelegramAlert(config, payload));
+    }
+
     // Webhook Notification
-    if (config.url) {
+    if (config.type === 'webhook' && config.url) {
         promises.push(sendWebhookAlert(config, payload));
     }
 
@@ -104,6 +110,43 @@ export async function sendWebhookAlert(config: AlertConfig, payload: AlertPayloa
         return true;
     } catch (error) {
         console.error('Webhook error:', error);
+        return false;
+    }
+}
+
+/**
+ * Sends a telegram notification
+ */
+export async function sendTelegramAlert(config: AlertConfig, payload: AlertPayload): Promise<boolean> {
+    if (!config.chatId) return false;
+
+    try {
+        const response = await fetch('/api/notifications/send-telegram', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chatId: config.chatId,
+                signal: {
+                    symbol: payload.symbol,
+                    type: payload.type,
+                    price: payload.price,
+                    reason: payload.message || 'Signal triggered',
+                    strategyName: payload.strategyName,
+                    timestamp: payload.time,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            console.error('Telegram alert failed:', response.status, response.statusText);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Telegram alert error:', error);
         return false;
     }
 }
