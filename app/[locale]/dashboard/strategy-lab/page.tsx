@@ -548,38 +548,41 @@ export default function StrategyLabPage() {
 
             {/* Main Content: Chart & Analytics */}
             <main className="flex-1 flex flex-col min-w-0 bg-muted/5 h-full relative">
-                {/* Top Metrics Bar */}
-                {/* Top Metrics Bar */}
-                <div className="h-14 border-b bg-background/40 backdrop-blur-md px-4 flex items-center overflow-x-auto gap-4 no-scrollbar">
-                    <MetricsCards metrics={result?.metrics || null} isLoading={isRunning} />
-                </div>
-
                 {/* Main Graph Area */}
                 <div className="flex-1 min-h-0 relative flex flex-col">
                     <Tabs defaultValue="chart" className="flex-1 flex flex-col h-full">
-                        <div className="absolute top-3 right-4 z-20">
-                            <TabsList className="bg-background/60 backdrop-blur-md border shadow-sm h-8">
-                                <TabsTrigger value="chart" className="text-xs h-6 px-3">Chart</TabsTrigger>
-                                <TabsTrigger value="analysis" className="text-xs h-6 px-3">Analysis</TabsTrigger>
-                                <TabsTrigger value="summary" className="text-xs h-6 px-3">Summary</TabsTrigger>
-                                <TabsTrigger value="trades" className="text-xs h-6 px-3">Trades</TabsTrigger>
+                        {/* Tabs Bar */}
+                        <div className="h-12 border-b bg-background/40 backdrop-blur-md px-4 flex items-center">
+                            <TabsList className="bg-background/60 backdrop-blur-md border shadow-sm h-9">
+                                <TabsTrigger value="chart" className="text-xs h-7 px-4">Chart</TabsTrigger>
+                                <TabsTrigger value="analysis" className="text-xs h-7 px-4">Analysis</TabsTrigger>
+                                <TabsTrigger value="summary" className="text-xs h-7 px-4">Summary</TabsTrigger>
+                                <TabsTrigger value="trades" className="text-xs h-7 px-4">Trades</TabsTrigger>
                             </TabsList>
                         </div>
 
+                        {/* Metrics Bar - Fixed Area */}
+                        {result && (
+                            <div className="border-b bg-background/30 backdrop-blur-md px-4 py-3">
+                                <MetricsCards metrics={result.metrics} isLoading={isRunning} />
+                            </div>
+                        )}
+
                         <TabsContent value="chart" className="flex-1 h-full m-0 data-[state=inactive]:hidden flex flex-col">
-                            <div className="flex-1 relative w-full h-full bg-gradient-to-b from-background/50 to-muted/20">
+                            <div className="flex-1 relative w-full h-full bg-gradient-to-b from-background/50 to-muted/20 p-4">
                                 {result ? (
-                                    <>
-                                        <div className={`w-full ${result && indicatorChartProps ? 'h-[75%]' : 'h-full'}`}>
+                                    <div className="h-full flex flex-col gap-1">
+                                        {/* Main Chart */}
+                                        <div className={`min-h-0`}>
                                             <BacktestChart
                                                 candles={result.candles}
                                                 signals={result.signals}
                                                 overlays={overlays}
                                             />
                                         </div>
-                                        {/* Indicator Chart (Bottom 25%) */}
+                                        {/* Indicator Chart - Closer with minimal gap */}
                                         {indicatorChartProps && (
-                                            <div className="h-[25%] border-t border-border/40 relative bg-background/40">
+                                            <div className="flex-1 min-h-[120px] max-h-[180px] relative bg-background/20 rounded-md border border-border/30">
                                                 <IndicatorChart
                                                     data={indicatorChartProps.data}
                                                     title={indicatorChartProps.title}
@@ -589,7 +592,7 @@ export default function StrategyLabPage() {
                                                 />
                                             </div>
                                         )}
-                                    </>
+                                    </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
                                         <div className="p-4 rounded-full bg-muted/50">
@@ -616,6 +619,7 @@ export default function StrategyLabPage() {
                             </div>
                         </TabsContent>
 
+
                         <TabsContent value="summary" className="flex-1 h-full m-0 data-[state=inactive]:hidden p-6 overflow-auto">
                             <div className="max-w-4xl mx-auto py-8">
                                 <h2 className="text-2xl font-bold mb-6">Performance Summary</h2>
@@ -628,14 +632,12 @@ export default function StrategyLabPage() {
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="trades" className="flex-1 h-full m-0 data-[state=inactive]:hidden">
-                            <div className="h-full flex flex-col">
-                                <div className="p-4 border-b bg-background/50">
-                                    <h2 className="text-lg font-semibold">Trade Logs</h2>
-                                </div>
-                                <div className="flex-1 overflow-auto">
-                                    <TradeLogTable trades={result?.trades || []} />
-                                </div>
+                        <TabsContent value="trades" className="flex-1 h-full m-0 data-[state=inactive]:hidden p-6 overflow-auto">
+                            <div className="max-w-4xl mx-auto py-8">
+                                <h2 className="text-2xl font-bold mb-6">Trade Logs</h2>
+                                {result ? (
+                                    <TradeLogTable trades={result.trades} />
+                                ) : <div className="text-center text-muted-foreground py-20">No results</div>}
                             </div>
                         </TabsContent>
                     </Tabs>

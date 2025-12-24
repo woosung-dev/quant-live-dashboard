@@ -66,28 +66,31 @@ export function MetricsCards({ metrics, isLoading }: MetricsCardsProps) {
     ];
 
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="flex gap-3 items-stretch">
             {cards.map((card, idx) => (
-                <Card key={idx} className="overflow-hidden">
-                    <CardHeader className="p-4 pb-1 space-y-0">
-                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <Card
+                    key={idx}
+                    className="overflow-hidden bg-background/80 backdrop-blur-md border-border/50 shadow-lg flex-1 min-w-[140px]"
+                >
+                    <CardHeader className="p-2.5 pb-1 space-y-0">
+                        <CardTitle className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">
                             {card.title}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-2">
+                    <CardContent className="p-2.5 pt-0">
                         <div className="flex flex-col">
                             <div className={cn(
-                                "text-2xl font-bold flex items-center gap-1",
+                                "text-lg font-bold flex items-center gap-1",
                                 card.isPositive && "text-green-500",
                                 card.isNegative && "text-red-500"
                             )}>
                                 {card.value}
-                                {card.isPositive && <ArrowUpIcon className="w-4 h-4" />}
-                                {card.isNegative && <ArrowDownIcon className="w-4 h-4" />}
-                                {!card.isPositive && !card.isNegative && <MinusIcon className="w-4 h-4 text-muted-foreground" />}
+                                {card.isPositive && <ArrowUpIcon className="w-3 h-3" />}
+                                {card.isNegative && <ArrowDownIcon className="w-3 h-3" />}
+                                {!card.isPositive && !card.isNegative && <MinusIcon className="w-3 h-3 text-muted-foreground" />}
                             </div>
                             {card.subValue && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-[9px] text-muted-foreground mt-0.5">
                                     {card.subValue}
                                 </p>
                             )}
