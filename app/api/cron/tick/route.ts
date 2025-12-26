@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ServerBotRunner } from '@/features/trade/lib/server/bot-runner';
 
-export const dynamic = 'force-dynamic'; // Prevent caching
+// Route Segment Config: Prevent static analysis during build
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 
 export async function GET(req: NextRequest) {
     // 1. Authenticate Cron
