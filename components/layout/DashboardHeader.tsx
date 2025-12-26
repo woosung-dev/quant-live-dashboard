@@ -22,6 +22,9 @@ import {
     PieChart,
     TrendingUp,
     X,
+    ShoppingBag,
+    Search,
+    Bot,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '@/lib/supabase';
@@ -38,6 +41,9 @@ import {
 const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Strategy Lab', href: '/dashboard/strategy-lab', icon: FlaskConical },
+    { label: 'Marketplace', href: '/dashboard/marketplace', icon: ShoppingBag },
+    { label: 'Explorer', href: '/dashboard/explorer', icon: Search },
+    { label: 'Bots', href: '/dashboard/bots', icon: Bot },
     { label: 'Live Trading', href: '/dashboard/live', icon: Activity },
     { label: 'Portfolio', href: '/dashboard/portfolio', icon: PieChart },
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -107,8 +113,8 @@ export function DashboardHeader() {
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${active
-                                        ? 'text-emerald-400 bg-emerald-500/10'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                                    ? 'text-emerald-400 bg-emerald-500/10'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                                     }`}
                             >
                                 <item.icon className="h-4 w-4" />
@@ -158,8 +164,8 @@ export function DashboardHeader() {
                                                 key={lang.code}
                                                 onClick={() => handleLanguageChange(lang.code)}
                                                 className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors ${locale === lang.code
-                                                        ? 'bg-emerald-500/10 text-emerald-400'
-                                                        : 'hover:bg-accent/50 text-foreground'
+                                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                                    : 'hover:bg-accent/50 text-foreground'
                                                     }`}
                                             >
                                                 <span>{lang.flag}</span>
@@ -267,8 +273,8 @@ export function DashboardHeader() {
                                             href={item.href}
                                             onClick={() => setMobileMenuOpen(false)}
                                             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${active
-                                                    ? 'text-emerald-400 bg-emerald-500/10'
-                                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                                                ? 'text-emerald-400 bg-emerald-500/10'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                                                 }`}
                                         >
                                             <item.icon className="h-5 w-5" />
@@ -289,8 +295,8 @@ export function DashboardHeader() {
                                                 key={lang.code}
                                                 onClick={() => handleLanguageChange(lang.code)}
                                                 className={`px-2 py-1 rounded text-xs font-medium transition-colors ${locale === lang.code
-                                                        ? 'bg-emerald-500/20 text-emerald-400'
-                                                        : 'text-muted-foreground hover:text-foreground'
+                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                    : 'text-muted-foreground hover:text-foreground'
                                                     }`}
                                             >
                                                 {lang.flag} {lang.label}

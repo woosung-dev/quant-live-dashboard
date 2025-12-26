@@ -7,5 +7,32 @@
         "light": "Light",
         "dark": "Dark",
         "system": "System"
+    },
+    "Dashboard": {
+        "totalEquity": "Total Equity",
+        "activeBots": "Active Bots",
+        "dailyPnL": "Daily PnL",
+        "winRate": "Win Rate"
+    },
+    "StrategyLab": {
+        "runBacktest": "Run Backtest",
+        "saveStrategy": "Save Strategy",
+        "loadStrategy": "Load Strategy",
+        "back test": "Backtest",
+        "results": "Results",
+        "trades": "Trades"
+    },
+    "Settings": {
+        "account": "Account",
+        "apiKeys": "API Keys",
+        "notifications": "Notifications",
+        "fullName": "Full Name",
+        "email": "Email",
+        "password": "Password",
+        "saveChanges": "Save Changes",
+        "telegram": "Telegram Integration",
+        "botToken": "Bot Token",
+        "chatId": "Chat ID",
+        "testTelegram": "Test Telegram"
     }
 }

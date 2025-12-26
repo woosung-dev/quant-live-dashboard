@@ -7,5 +7,32 @@
         "light": "라이트",
         "dark": "다크",
         "system": "시스템"
+    },
+    "Dashboard": {
+        "totalEquity": "총 자산",
+        "activeBots": "활성 봇",
+        "dailyPnL": "일일 손익",
+        "winRate": "승률"
+    },
+    "StrategyLab": {
+        "runBacktest": "백테스트 실행",
+        "saveStrategy": "전략 저장",
+        "loadStrategy": "전략 불러오기",
+        "backtest": "백테스트",
+        "results": "결과",
+        "trades": "거래"
+    },
+    "Settings": {
+        "account": "계정",
+        "apiKeys": "API 키",
+        "notifications": "알림",
+        "fullName": "이름",
+        "email": "이메일",
+        "password": "비밀번호",
+        "saveChanges": "변경사항 저장",
+        "telegram": "텔레그램 연동",
+        "botToken": "봇 토큰",
+        "chatId": "채팅 ID",
+        "testTelegram": "텔레그램 테스트"
     }
 }
