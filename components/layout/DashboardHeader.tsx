@@ -87,8 +87,20 @@ export function DashboardHeader() {
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push('/login');
+        try {
+            // Sign out client-side
+            await supabase.auth.signOut();
+            
+            // Sign out server-side (clear cookies)
+            await fetch('/api/auth/logout', { method: 'POST' });
+            
+            // Redirect to login
+            router.push('/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Force redirect even if there's an error
+            router.push('/login');
+        }
     };
 
     return (
