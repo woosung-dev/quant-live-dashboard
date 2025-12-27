@@ -30,7 +30,7 @@ export default function AuthLayout({
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-emerald-950/20">
+        <div className="min-h-screen flex flex-col">
             {/* Minimal Header */}
             <header className="flex items-center justify-between px-6 py-4">
                 {/* Logo */}
