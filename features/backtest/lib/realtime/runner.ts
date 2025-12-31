@@ -153,7 +153,7 @@ export class RealtimeRunner {
                             strategyName: this.strategy.name,
                             symbol: this.config.symbol,
                             timeframe: this.config.timeframe,
-                            type: lastSignal.type,
+                            type: lastSignal.type as 'buy' | 'sell',
                             price: lastSignal.price,
                             time: lastSignal.time
                         });
@@ -165,7 +165,7 @@ export class RealtimeRunner {
                         this.log(`🚀 EXECUTING LIVE TRADE: ${lastSignal.type.toUpperCase()}`);
                         await this.onTrade({
                             symbol: this.config.symbol,
-                            side: lastSignal.type,
+                            side: lastSignal.type as 'buy' | 'sell',
                             // Quantity logic needs to be defined. For MVP, use default fixed size?
                             // Or strategy should provide it.
                             // For now let the callback handle default sizing.

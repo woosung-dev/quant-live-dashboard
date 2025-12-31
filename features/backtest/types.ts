@@ -105,9 +105,13 @@ export interface Candle {
 /** 시그널 */
 export interface Signal {
     time: number;
-    type: 'buy' | 'sell';
+    type: 'buy' | 'sell' | 'tp' | 'sl';  // TP/SL 청산 타입 추가
     price: number;
     reason?: string;
+    // TP/SL 정보 (entry 신호에 포함)
+    stopLoss?: number;
+    takeProfit?: number[];  // 복수 TP 지원 (1:1, 1:2, 1:3)
+    tpRatio?: number[];     // 각 TP에서 청산 비율 (예: [0.33, 0.33, 0.34])
 }
 
 /** 거래 기록 */
@@ -118,10 +122,22 @@ export interface Trade {
     entryPrice: number;
     exitTime: number;
     exitPrice: number;
+    exitReason?: 'signal' | 'tp' | 'sl';  // 청산 사유
     quantity: number;
     pnl: number;
     pnlPercent: number;
     cumulativePnl: number;
+}
+
+/** 활성 포지션 (백테스팅 내부용) */
+export interface Position {
+    type: 'long' | 'short';
+    entryPrice: number;
+    entryTime: number;
+    quantity: number;
+    stopLoss: number;
+    takeProfits: { price: number; ratio: number }[];  // 복수 TP
+    remainingQuantity: number;  // 부분 청산 후 남은 수량
 }
 
 /** 수익 곡선 포인트 */
