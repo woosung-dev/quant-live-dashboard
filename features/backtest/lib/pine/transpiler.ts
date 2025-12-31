@@ -456,7 +456,27 @@ function transpilePineScriptInternal(script: string): TranspilerResult {
         }
 
         // Skip import statements (Pine Script v5/v6 library imports)
-        if (line.match(/^\s*import\s+/)) {
+        if (trimmedLine.match(/^import\s+/) || line.match(/^_import\s+/)) {
+            continue;
+        }
+
+        // Skip method definitions (Pine Script method keyword)
+        if (line.match(/^\s*method\s+/)) {
+            strippingIndentLevel = spaces;
+            continue;
+        }
+
+        // Skip type definitions and exports
+        if (line.match(/^\s*(export\s+)?(type|enum)\s+/)) {
+            strippingIndentLevel = spaces;
+            continue;
+        }
+
+        // Skip array type declarations with generics
+        if (line.match(/var\s+(array|lines|boxes)\s*=\s*array\./i) || 
+            line.match(/var\s+[a-zA-Z0-9_]+\s*=\s*array\.new/i) ||
+            line.match(/var\s+array<[^>]+>/)) {
+            processedScript += `// Skipped: ${line}\n`;
             continue;
         }
 
@@ -487,10 +507,20 @@ function transpilePineScriptInternal(script: string): TranspilerResult {
             }
         }
 
-        // Handle 'input'
-        const inputMatch = line.match(/^([a-zA-Z0-9_]+)\s*=\s*input\s*\((.*)\)/);
-        if (inputMatch) {
-            let [_, varName, argsStr] = inputMatch;
+        // Handle input() AND input.int/float/bool/source/color/string/timeframe
+        const inputMatchExtended = line.match(/^([a-zA-Z0-9_]+)\s*=\s*input\.(int|float|bool|source|color|string|timeframe|symbol)\s*\((.*)\)/);
+        const inputMatchBasic = line.match(/^([a-zA-Z0-9_]+)\s*=\s*input\s*\((.*)\)/);
+        
+        if (inputMatchExtended || inputMatchBasic) {
+            let varName: string;
+            let argsStr: string;
+            let inputType = 'float'; // default
+            
+            if (inputMatchExtended) {
+                [, varName, inputType, argsStr] = inputMatchExtended;
+            } else {
+                [, varName, argsStr] = inputMatchBasic!;
+            }
             let defVal = "";
 
             // Helper to extract named arg value respecting parentheses
@@ -583,7 +613,7 @@ function transpilePineScriptInternal(script: string): TranspilerResult {
                 }
             }
 
-            if (!defVal) defVal = "0";
+            if (!defVal) defVal = inputType === 'bool' ? 'false' : '0';
 
             if (defVal === 'close') defVal = 'candles[i].close';
             else if (defVal === 'open') defVal = 'candles[i].open';
@@ -591,6 +621,8 @@ function transpilePineScriptInternal(script: string): TranspilerResult {
             else if (defVal === 'low') defVal = 'candles[i].low';
             else if (defVal === 'volume') defVal = 'candles[i].volume';
             else if (defVal === 'hl2') defVal = '(candles[i].high + candles[i].low) / 2';
+            else if (defVal === 'hlc3') defVal = '(candles[i].high + candles[i].low + candles[i].close) / 3';
+            else if (defVal === 'ohlc4') defVal = '(candles[i].open + candles[i].high + candles[i].low + candles[i].close) / 4';
 
             processedScript += `const ${varName} = ${defVal};\n`;
             continue;

@@ -226,21 +226,10 @@ Binance API로부터 증분 업데이트(Incremental Update)를 받아 효율적
 - [ ] 소셜 카피 트레이딩 (Copy Trading)
 - [ ] 고급 리스크 관리 기능
 
----
-
-## 📄 라이선스 (License)
-
-이 프로젝트는 포트폴리오 시연 목적으로 제작되었습니다.
-
----
-
 ## 📬 연락처 (Contact)
 
-<!-- 정보를 업데이트하세요 -->
-
-- **Email**: your.email@example.com
-- **LinkedIn**: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-- **GitHub**: [@yourusername](https://github.com/yourusername)
+- **Email**: jangwooseng97@gmail.com
+- **GitHub**: [@woosung-dev](https://github.com/woosung-dev)
 
 ---
 

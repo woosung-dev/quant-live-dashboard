@@ -381,6 +381,71 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
                 for (let k = 1; k <= right; k++) if ((candles[idx + k]?.low || 0) <= val) return NaN;
                 return val;
             },
+            // change(src) returns src - src[1]
+            change: (src) => {
+                if (typeof src === 'number') {
+                    // src is a current value, get previous from series history or candles
+                    const prev = i > 0 ? candles[i - 1]?.close || 0 : src;
+                    return src - prev;
+                }
+                // If src is an array (indicator result), calculate change
+                if (Array.isArray(src)) {
+                    const curr = src[i] || 0;
+                    const prev = i > 0 ? (src[i - 1] || 0) : curr;
+                    return curr - prev;
+                }
+                return 0;
+            },
+            // sum(src, length) returns sum of src over length bars
+            sum: (src, len) => {
+                if (i < len - 1) return 0;
+                let total = 0;
+                for (let k = 0; k < len; k++) {
+                    if (typeof src === 'number') {
+                        total += src;
+                    } else if (Array.isArray(src)) {
+                        total += src[i - k] || 0;
+                    } else {
+                        total += candles[i - k]?.close || 0;
+                    }
+                }
+                return total;
+            },
+            // barssince(condition) - simplified, tracks in _conditionHistory
+            barssince: (cond) => {
+                // If condition is true now, return 0
+                if (cond) return 0;
+                // Otherwise search backwards (simplified - returns large number)
+                return 999;
+            },
+            // valuewhen already defined above
+            // tr (true range)
+            tr: (handleNa) => {
+                const c = candles[i];
+                const p = i > 0 ? candles[i - 1] : c;
+                return Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close));
+            },
+            // rma (Running Moving Average, used in ATR calculation)
+            rma: (src, len) => {
+                // Simplified as SMA for now
+                if (i < len) return typeof src === 'number' ? src : candles[i]?.close || 0;
+                let sum = 0;
+                for (let k = 0; k < len; k++) {
+                    sum += typeof src === 'number' ? src : (candles[i - k]?.close || 0);
+                }
+                return sum / len;
+            },
+            // Request up and down volume (mock for backtest)
+            requestUpAndDownVolume: (tf) => {
+                const c = candles[i];
+                if (!c) return [0, 0, 0];
+                const isUp = c.close >= c.open;
+                return [
+                    isUp ? c.volume : 0,  // up volume
+                    isUp ? 0 : c.volume,  // down volume  
+                    isUp ? c.volume : -c.volume  // delta
+                ];
+            },
         };
         
         // Math helpers
@@ -398,6 +463,18 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
             log10: Math.log10,
             exp: Math.exp,
             sign: Math.sign,
+            sum: (src, len) => {
+                if (i < len - 1) return 0;
+                let total = 0;
+                for (let k = 0; k < len; k++) {
+                    if (typeof src === 'number') {
+                        total += src;
+                    } else {
+                        total += candles[i - k]?.close || 0;
+                    }
+                }
+                return total;
+            },
         };
         
         // Mock visual objects (line, label, box, etc.) - they do nothing but prevent errors
@@ -490,15 +567,27 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
         
         // Strategy/Study mocks if they appear as functions
         const study = () => 0;
-        // strategy object is already partially mocked via replacement, but 'strategy()' call check:
-        // strategy object implementation
+        
+        // TP/SL 추적을 위한 변수
+        let lastEntryPrice = 0;
+        let lastEntryType = null;
+        
+        // TP/SL 공유 객체 - Pine Script 코드에서 접근 가능
+        const _tpsl = { sl: 0, tp: [] };
+        
+        // Pine Script 변수들이 할당될 때 자동으로 _tpsl에도 저장되도록
+        // 자주 사용되는 TP/SL 변수명 패턴 (DrFX 등에서 사용)
+        let stop_y = 0;
+        let atrStop = 0;
+        let tp1Rl_y = 0;
+        let tp2RL_y = 0;
+        let tp3RL_y = 0;
+        
+        // strategy object - TP/SL 지원 버전
         const strategy = {
             entry: (id, direction, qty, limit, stop, oca_name, oca_type, comment, when) => {
                 // Heuristic: Check for 'when' condition passed as other arguments due to named-arg stripping
-                let condition = true; // default true if no 'when' passed? Pine default is true? No, usually explicit.
-                // If named arg "when=longCondition" was stripped, 'longCondition' (bool) might be in 'qty' (3rd) or others.
-                
-                // Identify boolean args
+                let condition = true;
                 const args = [qty, limit, stop, oca_name, oca_type, comment, when];
                 const boolArg = args.find(a => typeof a === 'boolean');
                 if (boolArg !== undefined) {
@@ -509,25 +598,45 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
 
                 // Map direction 'long' -> 'buy', 'short' -> 'sell'
                 const type = (direction === 'long' || direction === strategy.long) ? 'buy' : 'sell';
+                
+                // 진입 가격 추적
+                lastEntryPrice = candles[i].close;
+                lastEntryType = type === 'buy' ? 'long' : 'short';
+                
+                // TP/SL 변수 참조 (사전 정의된 변수 사용)
+                // DrFX 스크립트의 패턴: stop_y, tp1Rl_y, tp2RL_y, tp3RL_y 등
+                let stopLoss = undefined;
+                let takeProfit = undefined;
+                
+                // SL 변수 확인 (0보다 큰 값이 있으면 사용)
+                if (stop_y > 0) stopLoss = stop_y;
+                else if (atrStop > 0) stopLoss = atrStop;
+                
+                // TP 변수 확인
+                const tpValues = [];
+                if (tp1Rl_y > 0) tpValues.push(tp1Rl_y);
+                if (tp2RL_y > 0) tpValues.push(tp2RL_y);
+                if (tp3RL_y > 0) tpValues.push(tp3RL_y);
+                
+                if (tpValues.length > 0) takeProfit = tpValues;
+                
                 signals.push({ 
                     time: candles[i].time, 
                     type: type, 
                     price: candles[i].close, 
-                    reason: id 
+                    reason: id,
+                    stopLoss,
+                    takeProfit,
                 });
             },
-            close: (id, comment, qty, func, when) => { // args might be shifted
+            close: (id, comment, qty, func, when) => {
                  let condition = true;
-                 const args = [comment, qty, func, when]; // check positional args after id
+                 const args = [comment, qty, func, when];
                  const boolArg = args.find(a => typeof a === 'boolean');
                  if (boolArg !== undefined) condition = boolArg;
                  
                  if (!condition) return;
 
-                // Heuristic: 'close' usually implies exiting the position identified by id.
-                // Without state, we can't be sure if "Long" means we need to Sell, or "Short" means we need to Buy.
-                // commonly, strategy.close("Long") -> Sell. strategy.close("Short") -> Buy.
-                // For MVP, we default to 'sell' if id contains "Long", 'buy' if "Short", else 'sell' (safe exit).
                 let type = 'sell';
                 if (id && id.toLowerCase().includes('short')) type = 'buy';
                 
@@ -537,15 +646,43 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
                     price: candles[i].close, 
                     reason: "Close " + id 
                 });
+                
+                lastEntryPrice = 0;
+                lastEntryType = null;
             },
             exit: (id, from_entry, qty, limit, stop, profit, loss, trail_points, trail_offset, comment) => {
-                // Exit is complex (tp/sl). For now, treat as general close/sell signal.
-               signals.push({ 
-                   time: candles[i].time, 
-                   type: 'sell', 
-                   price: candles[i].close, 
-                   reason: "Exit " + (id || from_entry)
-               });
+                // strategy.exit의 profit/loss 파라미터 처리
+                let stopLoss = undefined;
+                let takeProfit = undefined;
+                
+                if (lastEntryPrice > 0) {
+                    // profit/loss는 틱 단위일 수 있음 - 백분율로 추정
+                    if (typeof profit === 'number' && profit > 0) {
+                        // 틱 기반이면 가격 계산
+                        const tpPrice = lastEntryType === 'long' 
+                            ? lastEntryPrice + profit 
+                            : lastEntryPrice - profit;
+                        takeProfit = [tpPrice];
+                    }
+                    if (typeof loss === 'number' && loss > 0) {
+                        stopLoss = lastEntryType === 'long' 
+                            ? lastEntryPrice - loss 
+                            : lastEntryPrice + loss;
+                    }
+                    
+                    // limit/stop 직접 가격도 지원
+                    if (typeof limit === 'number') takeProfit = [limit];
+                    if (typeof stop === 'number') stopLoss = stop;
+                }
+                
+                // TP/SL 정보가 있으면 기존 진입 신호 업데이트
+                if ((stopLoss || takeProfit) && signals.length > 0) {
+                    const lastSignal = signals[signals.length - 1];
+                    if (lastSignal.type === 'buy' || lastSignal.type === 'sell') {
+                        if (stopLoss) lastSignal.stopLoss = stopLoss;
+                        if (takeProfit) lastSignal.takeProfit = takeProfit;
+                    }
+                }
             },
             cancel: () => {},
             cancel_all: () => {},
@@ -553,7 +690,7 @@ export function runPineScript(script: string, candles: Candle[]): PineRunnerResu
             // properties
             long: 'long',
             short: 'short',
-            position_size: 0, // mock
+            position_size: 0,
             opentrades: 0
         };
         

@@ -44,7 +44,8 @@ import {
 import { Loader2, Play, Lock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { saveStrategy, getUserStrategies, StrategyDTO } from "@/features/backtest/lib/storage";
-import { Save, FolderOpen, RefreshCw } from "lucide-react";
+import { saveBacktestResult } from "@/features/backtest/lib/result-service";
+import { Save, FolderOpen, RefreshCw, Download } from "lucide-react";
 import { SaveStrategyDialog } from "@/features/backtest/components/SaveStrategyDialog";
 import { ShareDialog } from "@/features/social/components/ShareDialog";
 import { Switch } from "@/components/ui/switch";
@@ -98,6 +99,7 @@ export default function StrategyLabPage() {
     // Dialog State
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
     const [isPasscodeOpne, setIsPasscodeOpen] = useState(false);
+    const [isSavingResult, setIsSavingResult] = useState(false);
     const [passcode, setPasscode] = useState("");
 
     // Real-time State
@@ -239,6 +241,25 @@ export default function StrategyLabPage() {
         // Let's make "Load" text "Refresh List" and reload.
         window.dispatchEvent(new Event('strategy-saved'));
         toast.success("Refreshed strategy list.");
+    };
+
+    // --- Save Backtest Result Handler ---
+    const handleSaveResult = async () => {
+        if (!result) return;
+        setIsSavingResult(true);
+        try {
+            const saved = await saveBacktestResult(result);
+            if (saved) {
+                toast.success("백테스트 결과가 저장되었습니다!");
+            } else {
+                toast.error("결과 저장에 실패했습니다.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("결과 저장 중 오류가 발생했습니다.");
+        } finally {
+            setIsSavingResult(false);
+        }
     };
     // -----------------------------------
 
@@ -564,7 +585,25 @@ export default function StrategyLabPage() {
                         {/* Metrics Bar - Fixed Area */}
                         {result && (
                             <div className="border-b bg-background/30 backdrop-blur-md px-4 py-3">
-                                <MetricsCards metrics={result.metrics} isLoading={isRunning} />
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex-1">
+                                        <MetricsCards metrics={result.metrics} isLoading={isRunning} />
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSaveResult}
+                                        disabled={isSavingResult}
+                                        className="shrink-0 h-8 px-3"
+                                    >
+                                        {isSavingResult ? (
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        ) : (
+                                            <Download className="w-4 h-4 mr-2" />
+                                        )}
+                                        Save Result
+                                    </Button>
+                                </div>
                             </div>
                         )}
 
