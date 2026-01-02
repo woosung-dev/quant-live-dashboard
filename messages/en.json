@@ -1,4 +1,90 @@
 {
+    "Navigation": {
+        "overview": "Overview",
+        "strategyLab": "Strategy Lab",
+        "marketplace": "Marketplace",
+        "explorer": "Explorer",
+        "bots": "Bots",
+        "liveTrading": "Live Trading",
+        "portfolio": "Portfolio",
+        "settings": "Settings",
+        "signOut": "Sign out",
+        "language": "Language"
+    },
+    "Navbar": {
+        "features": {
+            "label": "Features",
+            "strategyLab": {
+                "label": "Strategy Lab",
+                "description": "Build & test strategies"
+            },
+            "backtest": {
+                "label": "Backtest Engine",
+                "description": "Historical performance"
+            },
+            "liveTrading": {
+                "label": "Live Trading",
+                "description": "Real-time execution"
+            }
+        }
+    },
+    "LandingPage": {
+        "hero": {
+            "badge": "Live Market Connected",
+            "title": "Quant Trading\nMade Easy for Everyone",
+            "subtitle": "From strategy verification to automated trading,\nstart complex algorithmic trading simply.",
+            "startFree": "Start for Free",
+            "viewDocs": "View Service Intro",
+            "chartLive": "Live",
+            "chartConnecting": "Connecting..."
+        },
+        "features": {
+            "title": "Why",
+            "subtitle": "Complex quant trading, we made it easy.",
+            "backtest": {
+                "title": "Real-time Backtest",
+                "desc": "Verify your strategy with historical data. Accurate simulation with real market data."
+            },
+            "alerts": {
+                "title": "Smart Notifications",
+                "desc": "Get real-time trading signals via KakaoTalk, Telegram, and Email. Never miss a moment."
+            },
+            "autotrading": {
+                "title": "Automated Trading",
+                "desc": "Run verified strategies 24/7 automatically. Consistent trading without emotion."
+            },
+            "security": {
+                "title": "Secure Integration",
+                "desc": "API keys are stored encrypted. Securely connected to exchanges without withdrawal permissions."
+            }
+        },
+        "stats": {
+            "backtests": "Cumulative Backtests",
+            "strategies": "Active Strategies",
+            "uptime": "Service Uptime",
+            "count": "",
+            "times": ""
+        },
+        "cta": {
+            "title": "Start Right Now",
+            "subtitle": "Start for free and verify your own trading strategy.",
+            "button": "Start for Free"
+        }
+    },
+    "Footer": {
+        "tagline": "Real-time Quant Trading Platform\nFrom strategy verification to automated trading",
+        "sections": {
+            "product": "Product",
+            "company": "Company",
+            "connect": "Connect"
+        },
+        "links": {
+            "features": "Features",
+            "privacy": "Privacy",
+            "terms": "Terms"
+        },
+        "copyright": "© 2025 QUANT.LIVE. All rights reserved."
+    },
     "HomePage": {
         "title": "Quant Live Dashboard",
         "about": "About"
@@ -9,30 +95,207 @@
         "system": "System"
     },
     "Dashboard": {
+        "title": "Dashboard Overview",
         "totalEquity": "Total Equity",
         "activeBots": "Active Bots",
         "dailyPnL": "Daily PnL",
-        "winRate": "Win Rate"
+        "winRate": "Win Rate",
+        "running": "Running",
+        "today": "today",
+        "recentActivity": "Recent Activity",
+        "marketTicker": "Market Ticker",
+        "equityCurvePlaceholder": "Equity Curve Chart Placeholder",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "loading": "Loading..."
     },
     "StrategyLab": {
+        "title": "Strategy Lab",
         "runBacktest": "Run Backtest",
+        "running": "Running",
+        "stop": "Stop Monitoring",
+        "startLive": "Start Live Trading",
+        "startPaper": "Start Paper Trading",
+        "liveExecutionEnabled": "LIVE EXECUTION ENABLED",
+        "paperTradingMode": "Paper Trading Mode",
         "saveStrategy": "Save Strategy",
         "loadStrategy": "Load Strategy",
-        "back test": "Backtest",
-        "results": "Results",
-        "trades": "Trades"
+        "saveResult": "Save Result",
+        "marketData": "Market Data",
+        "dateRange": "Date Range (Optional)",
+        "start": "Start",
+        "end": "End",
+        "clearDates": "Clear dates",
+        "parameters": "Parameters",
+        "realtimeLogs": "Real-time Logs",
+        "tabs": {
+            "chart": "Chart",
+            "analysis": "Analysis",
+            "summary": "Summary",
+            "trades": "Trades"
+        },
+        "unlockKeys": "Unlock API Keys",
+        "enterPasscode": "Enter your security passcode to decrypt keys and start LIVE trading.",
+        "passcode": "Passcode",
+        "unlockAndStart": "Unlock & Start",
+        "cancel": "Cancel",
+        "ready": "Ready to Backtest",
+        "configurePrompt": "Configure your strategy and press Run",
+        "noResults": "No results",
+        "strategySaved": "Strategy saved successfully!",
+        "resultSaved": "Backtest result saved!"
+    },
+    "Explorer": {
+        "title": "Strategy Explorer",
+        "description": "Discover and fork high-performing strategies from the community.",
+        "tabs": {
+            "trending": "Trending",
+            "topReturns": "Top Returns",
+            "newest": "Newest"
+        }
+    },
+    "CloudBots": {
+        "title": "Cloud Bots (24/7)",
+        "description": "Manage your always-on trading bots running on the secure cloud server.",
+        "noBots": "No cloud bots active. Deploy one from the Strategy Lab.",
+        "unknownStrategy": "Unknown Strategy",
+        "lastCheck": "Last Check",
+        "position": "Position",
+        "pnl": "PnL",
+        "never": "Never",
+        "none": "NONE",
+        "pause": "Pause",
+        "resume": "Resume",
+        "delete": "Delete"
+    },
+    "KeyManager": {
+        "title": "Key Manager",
+        "description": "Manage keys for Local (Browser) or Cloud (Server) execution",
+        "localTab": "Browser Storage",
+        "cloudTab": "Cloud Vault",
+        "localInfo": "Keys stored here are used for <strong>Strategy Lab Live Mode</strong>. They never leave your browser.",
+        "cloudInfo": "Keys stored here are used for <strong>24/7 Cloud Bots</strong>. They are encrypted on our secure server.",
+        "enterPasscode": "Enter Passcode",
+        "unlockVault": "Unlock Vault",
+        "setPasscode": "Set Passcode",
+        "initPrompt": "Initialize",
+        "unlockPrompt": "Unlock",
+        "activeConnections": "Active Connections",
+        "lock": "Lock",
+        "noLocalKeys": "No local keys.",
+        "testnet": "Testnet",
+        "saveLocally": "Save Locally",
+        "verifying": "Verifying...",
+        "cloudConnections": "Cloud Connections",
+        "noCloudKeys": "No cloud keys.",
+        "encryptAndUpload": "Encrypt & Upload to Cloud",
+        "encrypting": "Encrypting..."
+    },
+    "LiveBots": {
+        "title": "Active Bots",
+        "deployNew": "Deploy New Bot",
+        "running": "RUNNING",
+        "strategy": "Strategy",
+        "exchange": "Exchange",
+        "totalPnL": "Total PnL"
+    },
+    "Portfolio": {
+        "title": "Portfolio & Assets",
+        "allocation": "Asset Allocation",
+        "pieChart": "Pie Chart",
+        "balances": "Exchange Balances",
+        "noBalances": "No balances found. Connect an exchange in Settings.",
+        "available": "Available",
+        "recentTransactions": "Recent Transactions",
+        "table": {
+            "date": "Date",
+            "exchange": "Exchange",
+            "type": "Type",
+            "asset": "Asset",
+            "amount": "Amount",
+            "status": "Status",
+            "completed": "Completed",
+            "deposit": "Deposit"
+        }
     },
     "Settings": {
+        "title": "Settings",
         "account": "Account",
         "apiKeys": "API Keys",
         "notifications": "Notifications",
         "fullName": "Full Name",
+        "fullnamePlaceholder": "Enter your full name",
         "email": "Email",
         "password": "Password",
+        "changePassword": "Change Password",
         "saveChanges": "Save Changes",
+        "saving": "Saving...",
+        "success": "Success",
+        "error": "Error",
+        "general": "General",
+        "tradeExecutions": "Trade Executions",
+        "tradeExecutionsDesc": "Get notified when a bot executes a trade",
+        "dailySummary": "Daily Summary",
+        "dailySummaryDesc": "Receive a daily PnL report via email",
         "telegram": "Telegram Integration",
         "botToken": "Bot Token",
+        "botTokenPlaceholder": "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz",
         "chatId": "Chat ID",
-        "testTelegram": "Test Telegram"
+        "chatIdPlaceholder": "123456789",
+        "getTokenGuide": "Get your bot token from",
+        "getChatIdGuide": "Start a chat with your bot and get your Chat ID",
+        "testTelegram": "Test Telegram",
+        "testing": "Testing..."
+    },
+    "Marketplace": {
+        "title": "Strategy Marketplace",
+        "description": "Discover and download trading strategies shared by the community",
+        "searchPlaceholder": "Search by tags (e.g., scalping, btc)",
+        "sortByRating": "Top Rated",
+        "sortByDownloads": "Most Downloaded",
+        "sortByLatest": "Latest",
+        "noStrategies": "No strategies found",
+        "tryAdjusting": "Try adjusting your search or be the first to publish!",
+        "loading": "Loading strategies...",
+        "downloads": "downloads",
+        "byAuthor": "by",
+        "viewDetails": "View Details",
+        "downloadStrategy": "Download Strategy",
+        "rateStrategy": "Rate this strategy",
+        "writeComment": "Write a comment...",
+        "postComment": "Post Comment",
+        "noComments": "No comments yet",
+        "tabInfo": "Info",
+        "tabCode": "Code",
+        "tabReviews": "Reviews",
+        "strategyDescription": "Description",
+        "noDescription": "No description provided.",
+        "tags": "Tags",
+        "parameters": "Parameters",
+        "purchaseRequired": "You need to purchase this strategy first",
+        "noCode": "No code available",
+        "commentsTitle": "Comments",
+        "ratedSuccess": "Rated {rating} stars!",
+        "ratingFailed": "Failed to submit rating",
+        "downloadSuccess": "Strategy downloaded to your library!",
+        "downloadFailed": "Failed to download strategy",
+        "commentPosted": "Comment posted!",
+        "commentFailed": "Failed to post comment",
+        "unknownUser": "Unknown"
+    },
+    "Leaderboard": {
+        "title": "Strategy Leaderboard",
+        "description": "Top performing strategies ranked by the community",
+        "tabRating": "Top Rated",
+        "tabProfit": "Highest Profit",
+        "tabTrades": "Most Trades",
+        "winRate": "Win Rate",
+        "cagr": "CAGR",
+        "mdd": "MDD",
+        "profitFactor": "Profit Factor",
+        "trades": "Trades",
+        "downloadCount": "Downloads",
+        "byAuthor": "by",
+        "noData": "No data available"
     }
 }

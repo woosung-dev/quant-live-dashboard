@@ -1,4 +1,90 @@
 {
+    "Navigation": {
+        "overview": "개요",
+        "strategyLab": "전략 연구소",
+        "marketplace": "마켓플레이스",
+        "explorer": "탐색기",
+        "bots": "봇 관리",
+        "liveTrading": "실시간 트레이딩",
+        "portfolio": "포트폴리오",
+        "settings": "설정",
+        "signOut": "로그아웃",
+        "language": "언어"
+    },
+    "Navbar": {
+        "features": {
+            "label": "기능",
+            "strategyLab": {
+                "label": "전략 연구소",
+                "description": "전략 구축 및 테스트"
+            },
+            "backtest": {
+                "label": "백테스트 엔진",
+                "description": "과거 데이터 기반 성능 검증"
+            },
+            "liveTrading": {
+                "label": "실시간 트레이딩",
+                "description": "실시간 자동 매매 실행"
+            }
+        }
+    },
+    "LandingPage": {
+        "hero": {
+            "badge": "실시간 시장 연동 중",
+            "title": "퀀트 트레이딩을\n누구나 쉽게",
+            "subtitle": "전략 검증부터 자동 매매까지,\n복잡한 알고리즘 트레이딩을 간단하게 시작하세요.",
+            "startFree": "무료로 시작하기",
+            "viewDocs": "서비스 소개 보기",
+            "chartLive": "실시간",
+            "chartConnecting": "연결 중..."
+        },
+        "features": {
+            "title": "왜",
+            "subtitle": "복잡한 퀀트 트레이딩, 우리가 쉽게 만들었습니다.",
+            "backtest": {
+                "title": "실시간 백테스트",
+                "desc": "과거 데이터로 당신의 전략을 검증하세요. 실제 시장 데이터로 정확한 시뮬레이션을 제공합니다."
+            },
+            "alerts": {
+                "title": "스마트 알림",
+                "desc": "카카오톡, 텔레그램, 이메일로 실시간 매매 시그널을 받아보세요. 중요한 순간을 놓치지 마세요."
+            },
+            "autotrading": {
+                "title": "자동 매매",
+                "desc": "검증된 전략을 24/7 자동으로 실행하세요. 감정 없는 일관된 트레이딩이 가능합니다."
+            },
+            "security": {
+                "title": "안전한 연동",
+                "desc": "API 키는 암호화되어 저장됩니다. 출금 권한 없이 안전하게 거래소와 연동됩니다."
+            }
+        },
+        "stats": {
+            "backtests": "누적 백테스트",
+            "strategies": "활성 전략",
+            "uptime": "서비스 가동률",
+            "count": "개",
+            "times": "회"
+        },
+        "cta": {
+            "title": "지금 바로\n시작하세요",
+            "subtitle": "무료로 시작하고, 당신만의 트레이딩 전략을 검증해보세요.",
+            "button": "무료로 시작하기"
+        }
+    },
+    "Footer": {
+        "tagline": "실시간 퀀트 트레이딩 플랫폼\n전략 검증부터 자동 매매까지",
+        "sections": {
+            "product": "제품",
+            "company": "회사",
+            "connect": "연결"
+        },
+        "links": {
+            "features": "기능",
+            "privacy": "개인정보처리방침",
+            "terms": "이용약관"
+        },
+        "copyright": "© 2025 QUANT.LIVE. All rights reserved."
+    },
     "HomePage": {
         "title": "퀀트 라이브 대시보드",
         "about": "소개"
@@ -9,30 +95,207 @@
         "system": "시스템"
     },
     "Dashboard": {
+        "title": "대시보드 개요",
         "totalEquity": "총 자산",
-        "activeBots": "활성 봇",
+        "activeBots": "실행 중인 봇",
         "dailyPnL": "일일 손익",
-        "winRate": "승률"
+        "winRate": "승률",
+        "running": "실행 중",
+        "today": "오늘",
+        "recentActivity": "최근 활동",
+        "marketTicker": "시장 시세",
+        "equityCurvePlaceholder": "자산 곡선 차트 예시",
+        "connected": "연결됨",
+        "disconnected": "연결 끊김",
+        "loading": "로딩 중..."
     },
     "StrategyLab": {
+        "title": "전략 연구소",
         "runBacktest": "백테스트 실행",
+        "running": "실행 중",
+        "stop": "모니터링 중지",
+        "startLive": "실전 매매 시작",
+        "startPaper": "모의 투자 시작",
+        "liveExecutionEnabled": "실전 매매 활성화됨",
+        "paperTradingMode": "모의 투자 모드",
         "saveStrategy": "전략 저장",
         "loadStrategy": "전략 불러오기",
-        "backtest": "백테스트",
-        "results": "결과",
-        "trades": "거래"
+        "saveResult": "결과 저장",
+        "marketData": "시장 데이터",
+        "dateRange": "기간 설정 (선택)",
+        "start": "시작일",
+        "end": "종료일",
+        "clearDates": "날짜 초기화",
+        "parameters": "매개변수",
+        "realtimeLogs": "실시간 로그",
+        "tabs": {
+            "chart": "차트",
+            "analysis": "분석",
+            "summary": "요약",
+            "trades": "매매 내역"
+        },
+        "unlockKeys": "API 키 잠금 해제",
+        "enterPasscode": "보안 비밀번호를 입력하여 키를 해독하고 실전 매매를 시작하세요.",
+        "passcode": "비밀번호",
+        "unlockAndStart": "해제 및 시작",
+        "cancel": "취소",
+        "ready": "백테스트 준비 완료",
+        "configurePrompt": "전략을 설정하고 실행하세요",
+        "noResults": "결과 없음",
+        "strategySaved": "전략이 저장되었습니다!",
+        "resultSaved": "백테스트 결과가 저장되었습니다!"
+    },
+    "Explorer": {
+        "title": "전략 탐색기",
+        "description": "커뮤니티의 고수익 전략을 탐색하고 복사하세요.",
+        "tabs": {
+            "trending": "인기 급상승",
+            "topReturns": "최고 수익률",
+            "newest": "최신 등록"
+        }
+    },
+    "CloudBots": {
+        "title": "클라우드 봇 (24/7)",
+        "description": "보안 클라우드 서버에서 실행되는 자동매매 봇을 관리하세요.",
+        "noBots": "활성화된 클라우드 봇이 없습니다. 전략 연구소에서 봇을 배포하세요.",
+        "unknownStrategy": "알 수 없는 전략",
+        "lastCheck": "마지막 확인",
+        "position": "포지션",
+        "pnl": "수익금(PnL)",
+        "never": "없음",
+        "none": "없음",
+        "pause": "일시정지",
+        "resume": "재개",
+        "delete": "삭제"
+    },
+    "KeyManager": {
+        "title": "키 관리자",
+        "description": "로컬(브라우저) 또는 클라우드(서버) 실행을 위한 API 키 관리",
+        "localTab": "브라우저 저장소",
+        "cloudTab": "클라우드 볼트",
+        "localInfo": "여기에 저장된 키는 <strong>전략 연구소 라이브 모드</strong>에 사용됩니다. 브라우저 외부로 전송되지 않습니다.",
+        "cloudInfo": "여기에 저장된 키는 <strong>24/7 클라우드 봇</strong>에 사용됩니다. 안전한 서버에 암호화되어 저장됩니다.",
+        "enterPasscode": "암호 입력",
+        "unlockVault": "볼트 잠금 해제",
+        "setPasscode": "암호 설정",
+        "initPrompt": "초기화하려면 암호 입력",
+        "unlockPrompt": "잠금 해제하려면 암호 입력",
+        "activeConnections": "활성 연결",
+        "lock": "잠금",
+        "noLocalKeys": "저장된 로컬 키 없음.",
+        "testnet": "테스트넷",
+        "saveLocally": "로컬에 저장",
+        "verifying": "검증 중...",
+        "cloudConnections": "클라우드 연결",
+        "noCloudKeys": "저장된 클라우드 키 없음.",
+        "encryptAndUpload": "암호화 및 클라우드 업로드",
+        "encrypting": "암호화 중..."
+    },
+    "LiveBots": {
+        "title": "실행 중인 봇",
+        "deployNew": "새 봇 배포",
+        "running": "실행 중",
+        "strategy": "전략",
+        "exchange": "거래소",
+        "totalPnL": "총 손익"
+    },
+    "Portfolio": {
+        "title": "포트폴리오 및 자산",
+        "allocation": "자산 배분",
+        "pieChart": "파이 차트",
+        "balances": "거래소 잔고",
+        "noBalances": "잔고가 없습니다. 설정에서 거래소를 연결하세요.",
+        "available": "사용 가능",
+        "recentTransactions": "최근 거래 내역",
+        "table": {
+            "date": "날짜",
+            "exchange": "거래소",
+            "type": "유형",
+            "asset": "자산",
+            "amount": "수량",
+            "status": "상태",
+            "completed": "완료됨",
+            "deposit": "입금"
+        }
     },
     "Settings": {
+        "title": "설정",
         "account": "계정",
         "apiKeys": "API 키",
         "notifications": "알림",
         "fullName": "이름",
+        "fullnamePlaceholder": "이름을 입력하세요",
         "email": "이메일",
         "password": "비밀번호",
+        "changePassword": "비밀번호 변경",
         "saveChanges": "변경사항 저장",
+        "saving": "저장 중...",
+        "success": "성공",
+        "error": "오류",
+        "general": "일반",
+        "tradeExecutions": "매매 체결",
+        "tradeExecutionsDesc": "봇이 매매를 체결할 때 알림을 받습니다",
+        "dailySummary": "일일 요약",
+        "dailySummaryDesc": "매일 이메일로 손익 보고서를 받습니다",
         "telegram": "텔레그램 연동",
         "botToken": "봇 토큰",
+        "botTokenPlaceholder": "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz",
         "chatId": "채팅 ID",
-        "testTelegram": "텔레그램 테스트"
+        "chatIdPlaceholder": "123456789",
+        "getTokenGuide": "봇 토큰 발급:",
+        "getChatIdGuide": "봇과 대화를 시작하여 채팅 ID를 확인하세요",
+        "testTelegram": "텔레그램 테스트",
+        "testing": "테스트 중..."
+    },
+    "Marketplace": {
+        "title": "전략 마켓플레이스",
+        "description": "커뮤니티가 공유한 트레이딩 전략을 탐색하고 다운로드하세요",
+        "searchPlaceholder": "태그로 검색 (예: 스캘핑, btc)",
+        "sortByRating": "평점 높은순",
+        "sortByDownloads": "다운로드 많은순",
+        "sortByLatest": "최신순",
+        "noStrategies": "전략을 찾을 수 없습니다",
+        "tryAdjusting": "검색어를 조정하거나 첫 번째로 게시해 보세요!",
+        "loading": "전략 불러오는 중...",
+        "downloads": "다운로드",
+        "byAuthor": "작성자",
+        "viewDetails": "자세히 보기",
+        "downloadStrategy": "전략 다운로드",
+        "rateStrategy": "이 전략 평가하기",
+        "writeComment": "댓글을 작성하세요...",
+        "postComment": "댓글 등록",
+        "noComments": "아직 댓글이 없습니다",
+        "tabInfo": "정보",
+        "tabCode": "코드",
+        "tabReviews": "리뷰",
+        "strategyDescription": "설명",
+        "noDescription": "설명이 없습니다.",
+        "tags": "태그",
+        "parameters": "파라미터",
+        "purchaseRequired": "이 전략을 먼저 구매해야 합니다",
+        "noCode": "코드를 볼 수 없습니다",
+        "commentsTitle": "댓글",
+        "ratedSuccess": "{rating}점 평가 완료!",
+        "ratingFailed": "평가 등록 실패",
+        "downloadSuccess": "전략이 라이브러리에 다운로드되었습니다!",
+        "downloadFailed": "전략 다운로드 실패",
+        "commentPosted": "댓글이 등록되었습니다!",
+        "commentFailed": "댓글 등록 실패",
+        "unknownUser": "알 수 없음"
+    },
+    "Leaderboard": {
+        "title": "전략 순위",
+        "description": "커뮤니티에서 검증된 최고 성능 전략 순위",
+        "tabRating": "평점 높은순",
+        "tabProfit": "수익률 높은순",
+        "tabTrades": "거래 많은순",
+        "winRate": "승률",
+        "cagr": "연복리수익률",
+        "mdd": "최대낙폭",
+        "profitFactor": "손익비",
+        "trades": "거래수",
+        "downloadCount": "다운로드",
+        "byAuthor": "작성자",
+        "noData": "데이터가 없습니다"
     }
 }
