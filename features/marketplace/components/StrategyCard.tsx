@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, Download, User } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface StrategyCardProps {
     id: string;
@@ -33,6 +34,8 @@ export function StrategyCard({
     author,
     onViewDetails
 }: StrategyCardProps) {
+    const t = useTranslations('Marketplace');
+
     const renderStars = (rating: number) => {
         const stars = [];
         for (let i = 1; i <= 5; i++) {
@@ -76,7 +79,7 @@ export function StrategyCard({
                 {/* Downloads */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Download className="w-4 h-4" />
-                    <span>{downloads.toLocaleString()} downloads</span>
+                    <span>{downloads.toLocaleString()} {t('downloads')}</span>
                 </div>
 
                 {/* Tags */}
@@ -99,7 +102,7 @@ export function StrategyCard({
                     e.stopPropagation();
                     onViewDetails(strategyId);
                 }}>
-                    View Details
+                    {t('viewDetails')}
                 </Button>
             </CardContent>
         </Card>

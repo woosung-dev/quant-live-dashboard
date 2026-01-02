@@ -16,9 +16,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star, Download, User, Calendar, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useTranslations } from "next-intl";
 
 interface StrategyDetail {
     id: string;
+    strategy_id: string;
     title: string;
     description: string;
     tags: string[];
@@ -55,6 +57,7 @@ interface StrategyDetailModalProps {
 }
 
 export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDetailModalProps) {
+    const t = useTranslations('Marketplace');
     const [strategy, setStrategy] = useState<StrategyDetail | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [userRating, setUserRating] = useState<number | null>(null);
@@ -112,7 +115,7 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
 
             if (res.ok) {
                 setUserRating(rating);
-                toast.success(`Rated ${rating} stars!`);
+                toast.success(t('ratedSuccess', { rating }));
                 // Refresh strategy to update avg_rating
                 const publicRes = await fetch(`/api/strategies/public`);
                 if (publicRes.ok) {
@@ -121,10 +124,10 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
                     if (found) setStrategy(found);
                 }
             } else {
-                toast.error('Failed to submit rating');
+                toast.error(t('ratingFailed'));
             }
         } catch (e) {
-            toast.error('Failed to submit rating');
+            toast.error(t('ratingFailed'));
         }
     };
 
@@ -132,28 +135,34 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
         if (!strategy) return;
 
         try {
-            // Copy strategy to user's personal strategies
-            const res = await fetch(`/api/strategies`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: `${strategy.title} (Downloaded)`,
-                    type: strategy.strategy?.type || 'unknown',
-                    code: strategy.strategy?.code || '',
-                    parameters: strategy.strategy?.parameters || {}
-                })
+            // Use Fork API
+            const res = await fetch(`/api/strategies/${strategy.strategy_id}/fork`, {
+                method: 'POST'
             });
 
             if (res.ok) {
-                // Increment download count
-                await fetch(`/api/strategies/${strategyId}/download`, { method: 'POST' });
-                toast.success('Strategy downloaded to your library!');
+                const data = await res.json();
+                toast.success(t('downloadSuccess'));
+                
+                // Refresh to update download count
+                const publicRes = await fetch(`/api/strategies/public`);
+                if (publicRes.ok) {
+                    const publicData = await publicRes.json();
+                    const found = publicData.strategies.find((s: any) => s.strategy_id === strategyId);
+                    if (found) setStrategy(found);
+                }
+                
                 onClose();
             } else {
-                toast.error('Failed to download strategy');
+                const error = await res.json();
+                if (res.status === 403) {
+                    toast.error(t('purchaseRequired'));
+                } else {
+                    toast.error(error.error || t('downloadFailed'));
+                }
             }
         } catch (e) {
-            toast.error('Failed to download strategy');
+            toast.error(t('downloadFailed'));
         }
     };
 
@@ -172,12 +181,12 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
                 const data = await res.json();
                 setComments([data.comment, ...comments]);
                 setNewComment('');
-                toast.success('Comment posted!');
+                toast.success(t('commentPosted'));
             } else {
-                toast.error('Failed to post comment');
+                toast.error(t('commentFailed'));
             }
         } catch (e) {
-            toast.error('Failed to post comment');
+            toast.error(t('commentFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -205,9 +214,9 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Loading Strategy...</DialogTitle>
+                        <DialogTitle>{t('loading')}</DialogTitle>
                     </DialogHeader>
-                    <div className="py-10 text-center text-muted-foreground">Loading...</div>
+                    <div className="py-10 text-center text-muted-foreground">{t('loading')}</div>
                 </DialogContent>
             </Dialog>
         );
@@ -225,7 +234,7 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
                     <DialogDescription>
                         <span className="flex items-center gap-2 mt-2">
                             <User className="w-4 h-4" />
-                            <span>{strategy.author?.full_name || strategy.author?.email || 'Unknown'}</span>
+                            <span>{strategy.author?.full_name || strategy.author?.email || t('unknownUser')}</span>
                             <span>•</span>
                             <Calendar className="w-4 h-4" />
                             <span>{format(new Date(strategy.published_at), 'PPP')}</span>
@@ -235,20 +244,20 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
 
                 <Tabs defaultValue="info" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="info">Info</TabsTrigger>
-                        <TabsTrigger value="code">Code</TabsTrigger>
-                        <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                        <TabsTrigger value="info">{t('tabInfo')}</TabsTrigger>
+                        <TabsTrigger value="code">{t('tabCode')}</TabsTrigger>
+                        <TabsTrigger value="reviews">{t('tabReviews')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="info" className="space-y-4 mt-4">
                         <div>
-                            <h4 className="font-semibold mb-2">Description</h4>
-                            <p className="text-sm text-muted-foreground">{strategy.description || 'No description provided.'}</p>
+                            <h4 className="font-semibold mb-2">{t('strategyDescription')}</h4>
+                            <p className="text-sm text-muted-foreground">{strategy.description || t('noDescription')}</p>
                         </div>
 
                         {strategy.tags && strategy.tags.length > 0 && (
                             <div>
-                                <h4 className="font-semibold mb-2">Tags</h4>
+                                <h4 className="font-semibold mb-2">{t('tags')}</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {strategy.tags.map((tag) => (
                                         <Badge key={tag} variant="secondary">#{tag}</Badge>
@@ -258,7 +267,7 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
                         )}
 
                         <div>
-                            <h4 className="font-semibold mb-2">Parameters</h4>
+                            <h4 className="font-semibold mb-2">{t('parameters')}</h4>
                             <pre className="text-xs bg-muted p-3 rounded overflow-auto">
                                 {JSON.stringify(strategy.strategy?.parameters || {}, null, 2)}
                             </pre>
@@ -267,14 +276,14 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
 
                     <TabsContent value="code" className="mt-4">
                         <pre className="text-xs bg-muted p-4 rounded overflow-auto max-h-96">
-                            {strategy.strategy?.code || '// No code available'}
+                            {strategy.strategy?.code || `// ${t('noCode')}`}
                         </pre>
                     </TabsContent>
 
                     <TabsContent value="reviews" className="space-y-4 mt-4">
                         {/* Rating */}
                         <div className="space-y-2">
-                            <h4 className="font-semibold">Rate this strategy</h4>
+                            <h4 className="font-semibold">{t('rateStrategy')}</h4>
                             <div className="flex items-center gap-2">
                                 {renderStars(userRating || 0, true)}
                                 {userRating && <span className="text-sm">({userRating}/5)</span>}
@@ -287,19 +296,19 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
                         <div className="space-y-3">
                             <h4 className="font-semibold flex items-center gap-2">
                                 <MessageSquare className="w-4 h-4" />
-                                Comments ({comments.length})
+                                {t('commentsTitle')} ({comments.length})
                             </h4>
 
                             {/* New Comment */}
                             <div className="space-y-2">
                                 <Textarea
-                                    placeholder="Write a comment..."
+                                    placeholder={t('writeComment')}
                                     value={newComment}
                                     onChange={(e) => setNewComment(e.target.value)}
                                     rows={3}
                                 />
                                 <Button onClick={handlePostComment} disabled={submitting || !newComment.trim()}>
-                                    Post Comment
+                                    {t('postComment')}
                                 </Button>
                             </div>
 
@@ -308,7 +317,7 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
                             {/* Comment List */}
                             <div className="space-y-3 max-h-64 overflow-y-auto">
                                 {comments.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground text-center py-4">No comments yet</p>
+                                    <p className="text-sm text-muted-foreground text-center py-4">{t('noComments')}</p>
                                 ) : (
                                     comments.map((comment) => (
                                         <div key={comment.id} className="bg-muted p-3 rounded">
@@ -345,7 +354,7 @@ export function StrategyDetailModal({ strategyId, isOpen, onClose }: StrategyDet
                     </div>
                     <Button onClick={handleDownload}>
                         <Download className="w-4 h-4 mr-2" />
-                        Download Strategy
+                        {t('downloadStrategy')}
                     </Button>
                 </div>
             </DialogContent>

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Search, TrendingUp, Download, Clock } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface PublicStrategy {
     id: string;
@@ -26,6 +27,7 @@ interface PublicStrategy {
 }
 
 export default function MarketplacePage() {
+    const t = useTranslations('Marketplace');
     const [strategies, setStrategies] = useState<PublicStrategy[]>([]);
     const [loading, setLoading] = useState(true);
     const [sort, setSort] = useState('rating');
@@ -82,9 +84,9 @@ export default function MarketplacePage() {
         <div className="container py-8 space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Strategy Marketplace</h2>
+                <h2 className="text-3xl font-bold tracking-tight">{t('title')}</h2>
                 <p className="text-muted-foreground">
-                    Discover and download trading strategies shared by the community
+                    {t('description')}
                 </p>
             </div>
 
@@ -94,7 +96,7 @@ export default function MarketplacePage() {
             <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1 flex gap-2">
                     <Input
-                        placeholder="Search by tags (e.g., scalping, btc)"
+                        placeholder={t('searchPlaceholder')}
                         value={searchTags}
                         onChange={(e) => setSearchTags(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -111,19 +113,19 @@ export default function MarketplacePage() {
                         <SelectItem value="rating">
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4" />
-                                Top Rated
+                                {t('sortByRating')}
                             </div>
                         </SelectItem>
                         <SelectItem value="downloads">
                             <div className="flex items-center gap-2">
                                 <Download className="w-4 h-4" />
-                                Most Downloaded
+                                {t('sortByDownloads')}
                             </div>
                         </SelectItem>
                         <SelectItem value="latest">
                             <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                Latest
+                                {t('sortByLatest')}
                             </div>
                         </SelectItem>
                     </SelectContent>
@@ -132,12 +134,12 @@ export default function MarketplacePage() {
 
             {/* Strategy Grid */}
             {loading ? (
-                <div className="text-center py-20 text-muted-foreground">Loading strategies...</div>
+                <div className="text-center py-20 text-muted-foreground">{t('loading')}</div>
             ) : strategies.length === 0 ? (
                 <div className="text-center py-20 border border-dashed rounded-lg">
-                    <p className="text-muted-foreground">No strategies found</p>
+                    <p className="text-muted-foreground">{t('noStrategies')}</p>
                     <p className="text-sm text-muted-foreground mt-2">
-                        Try adjusting your search or be the first to publish!
+                        {t('tryAdjusting')}
                     </p>
                 </div>
             ) : (
@@ -171,3 +173,4 @@ export default function MarketplacePage() {
         </div>
     );
 }
+
