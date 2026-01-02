@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
+import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -38,15 +38,16 @@ import {
 } from '@/components/ui/sheet';
 
 // Navigation items - Exchange style
-const navItems = [
-    { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Strategy Lab', href: '/dashboard/strategy-lab', icon: FlaskConical },
-    { label: 'Marketplace', href: '/dashboard/marketplace', icon: ShoppingBag },
-    { label: 'Explorer', href: '/dashboard/explorer', icon: Search },
-    { label: 'Bots', href: '/dashboard/bots', icon: Bot },
-    { label: 'Live Trading', href: '/dashboard/live', icon: Activity },
-    { label: 'Portfolio', href: '/dashboard/portfolio', icon: PieChart },
-    { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+// Navigation items defined inside component to use translations
+const getNavItems = (t: any) => [
+    { label: t('overview'), href: '/dashboard', icon: LayoutDashboard },
+    { label: t('strategyLab'), href: '/dashboard/strategy-lab', icon: FlaskConical },
+    { label: t('marketplace'), href: '/dashboard/marketplace', icon: ShoppingBag },
+    { label: t('explorer'), href: '/dashboard/explorer', icon: Search },
+    { label: t('bots'), href: '/dashboard/bots', icon: Bot },
+    { label: t('liveTrading'), href: '/dashboard/live', icon: Activity },
+    { label: t('portfolio'), href: '/dashboard/portfolio', icon: PieChart },
+    { label: t('settings'), href: '/dashboard/settings', icon: Settings },
 ];
 
 const languages = [
@@ -57,7 +58,9 @@ const languages = [
 export function DashboardHeader() {
     const pathname = usePathname();
     const locale = useLocale();
+    const t = useTranslations('Navigation');
     const router = useRouter();
+    const navItems = getNavItems(t);
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
@@ -233,14 +236,14 @@ export function DashboardHeader() {
                                             className="flex items-center gap-2 px-3 py-2 rounded text-sm hover:bg-accent/50 transition-colors"
                                         >
                                             <Settings className="h-4 w-4" />
-                                            <span>Settings</span>
+                                            <span>{t('settings')}</span>
                                         </Link>
                                         <button
                                             onClick={handleLogout}
                                             className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-red-500 hover:bg-red-500/10 transition-colors"
                                         >
                                             <LogOut className="h-4 w-4" />
-                                            <span>Sign out</span>
+                                            <span>{t('signOut')}</span>
                                         </button>
                                     </div>
                                 </motion.div>
@@ -300,7 +303,7 @@ export function DashboardHeader() {
                             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border/50 space-y-2">
                                 {/* Language */}
                                 <div className="flex items-center justify-between px-2 py-2">
-                                    <span className="text-sm text-muted-foreground">Language</span>
+                                    <span className="text-sm text-muted-foreground">{t('language')}</span>
                                     <div className="flex gap-1">
                                         {languages.map((lang) => (
                                             <button
@@ -323,7 +326,7 @@ export function DashboardHeader() {
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-500/10 transition-colors"
                                 >
                                     <LogOut className="h-4 w-4" />
-                                    <span>Sign out</span>
+                                    <span>{t('signOut')}</span>
                                 </button>
                             </div>
                         </SheetContent>

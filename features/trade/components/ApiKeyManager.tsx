@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +20,7 @@ interface ApiKeyManagerProps {
 }
 
 export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
+    const t = useTranslations('KeyManager');
     const [passcode, setPasscode] = useState("");
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [keys, setKeys] = useState<KeyMap>({});
@@ -186,43 +188,41 @@ export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Lock className="w-5 h-5" />
-                    Key Manager
+                    {t('title')}
                 </CardTitle>
-                <CardDescription>Manage keys for Local (Browser) or Cloud (Server) execution</CardDescription>
+                <CardDescription>{t('description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="local" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 mb-4">
                         <TabsTrigger value="local" className="flex items-center gap-2">
                             <HardDrive className="w-4 h-4" />
-                            Browser Storage
+                            {t('localTab')}
                         </TabsTrigger>
                         <TabsTrigger value="cloud" className="flex items-center gap-2">
                             <Cloud className="w-4 h-4" />
-                            Cloud Vault
+                            {t('cloudTab')}
                         </TabsTrigger>
                     </TabsList>
 
                     {/* LOCAL TAB */}
                     <TabsContent value="local" className="space-y-4">
                         <div className="bg-muted/30 p-4 rounded-md mb-4 border border-dashed">
-                            <p className="text-sm text-muted-foreground">
-                                Keys stored here are used for <strong>Strategy Lab Live Mode</strong>.
-                                They never leave your browser.
-                            </p>
+                            <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.raw('localInfo') }} />
                         </div>
 
                         {!isUnlocked ? (
                             <div className="space-y-4 max-w-sm mx-auto py-4">
-                                <Label>Enter Passcode to {hasStoredLocalKeys ? "Unlock" : "Initialize"}</Label>
+                                <Label>{hasStoredLocalKeys ? t('unlockPrompt') : t('initPrompt')}</Label>
                                 <Input
                                     type="password"
                                     value={passcode}
                                     onChange={e => setPasscode(e.target.value)}
+                                    placeholder={t('enterPasscode')}
                                     onKeyDown={e => e.key === 'Enter' && (hasStoredLocalKeys ? handleUnlock() : handleInitialSetup())}
                                 />
                                 <Button className="w-full" onClick={hasStoredLocalKeys ? handleUnlock : handleInitialSetup}>
-                                    {hasStoredLocalKeys ? "Unlock Vault" : "Set Passcode"}
+                                    {hasStoredLocalKeys ? t('unlockVault') : t('setPasscode')}
                                 </Button>
                             </div>
                         ) : (
@@ -230,9 +230,9 @@ export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
                                 {/* Local Keys List */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
-                                        <Label>Active Connections</Label>
+                                        <Label>{t('activeConnections')}</Label>
                                         <Button variant="ghost" size="sm" onClick={handleLock} className="h-6 text-xs">
-                                            Lock
+                                            {t('lock')}
                                         </Button>
                                     </div>
                                     {Object.entries(keys).map(([id, data]) => (
@@ -243,7 +243,7 @@ export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
                                             </Button>
                                         </div>
                                     ))}
-                                    {Object.keys(keys).length === 0 && <p className="text-sm text-muted-foreground">No local keys.</p>}
+                                    {Object.keys(keys).length === 0 && <p className="text-sm text-muted-foreground">{t('noLocalKeys')}</p>}
                                 </div>
 
                                 {/* Form */}
@@ -259,13 +259,13 @@ export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
                                         </Select>
                                         <div className="flex items-center space-x-2">
                                             <Switch id="local-testnet" checked={testnet} onCheckedChange={setTestnet} />
-                                            <Label htmlFor="local-testnet">Testnet</Label>
+                                            <Label htmlFor="local-testnet">{t('testnet')}</Label>
                                         </div>
                                     </div>
                                     <Input placeholder="API Key" value={apiKey} onChange={e => setApiKey(e.target.value)} />
                                     <Input type="password" placeholder="Secret" value={secret} onChange={e => setSecret(e.target.value)} />
                                     <Button className="w-full" onClick={handleSaveKeyLocal} disabled={loading}>
-                                        {loading ? "Verifying..." : "Save Locally"}
+                                        {loading ? t('verifying') : t('saveLocally')}
                                     </Button>
                                 </div>
                             </div>
@@ -275,15 +275,12 @@ export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
                     {/* CLOUD TAB */}
                     <TabsContent value="cloud" className="space-y-4">
                         <div className="bg-blue-500/10 p-4 rounded-md mb-4 border border-blue-500/20">
-                            <p className="text-sm text-blue-400">
-                                Keys stored here are used for <strong>24/7 Cloud Bots</strong>.
-                                They are encrypted on our secure server.
-                            </p>
+                            <p className="text-sm text-blue-400" dangerouslySetInnerHTML={{ __html: t.raw('cloudInfo') }} />
                         </div>
 
                         {/* Cloud Keys List */}
                         <div className="space-y-2">
-                            <Label>Cloud Connections</Label>
+                            <Label>{t('cloudConnections')}</Label>
                             {cloudKeys.map((k) => (
                                 <div key={k.exchange} className="flex items-center justify-between p-3 border rounded-md bg-blue-500/10 border-blue-500/20">
                                     <Badge variant="outline" className="border-blue-500 text-blue-400">{k.exchange}</Badge>
@@ -292,7 +289,7 @@ export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
                                     </Button>
                                 </div>
                             ))}
-                            {cloudKeys.length === 0 && <p className="text-sm text-muted-foreground">No cloud keys.</p>}
+                            {cloudKeys.length === 0 && <p className="text-sm text-muted-foreground">{t('noCloudKeys')}</p>}
                         </div>
 
                         {/* Form */}
@@ -311,7 +308,7 @@ export function ApiKeyManager({ onKeysChange }: ApiKeyManagerProps) {
                             <Input placeholder="API Key" value={apiKey} onChange={e => setApiKey(e.target.value)} />
                             <Input type="password" placeholder="Secret" value={secret} onChange={e => setSecret(e.target.value)} />
                             <Button className="w-full" variant="secondary" onClick={handleSaveKeyCloud} disabled={loading}>
-                                {loading ? "Encrypting..." : "Encrypt & Upload to Cloud"}
+                                {loading ? t('encrypting') : t('encryptAndUpload')}
                             </Button>
                         </div>
                     </TabsContent>

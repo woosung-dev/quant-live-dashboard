@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ interface Bot {
 }
 
 export function CloudBotList() {
+    const t = useTranslations('CloudBots');
     const [bots, setBots] = useState<Bot[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -95,7 +97,7 @@ export function CloudBotList() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {bots.length === 0 && (
                     <div className="col-span-full text-center py-10 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
-                        No cloud bots active. Deploy one from the Strategy Lab.
+                        {t('noBots')}
                     </div>
                 )}
 
@@ -109,7 +111,7 @@ export function CloudBotList() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <CardTitle className="text-lg">{bot.name}</CardTitle>
-                                    <CardDescription>{bot.strategy?.name || "Unknown Strategy"}</CardDescription>
+                                    <CardDescription>{bot.strategy?.name || t('unknownStrategy')}</CardDescription>
                                 </div>
                                 <Badge variant={bot.status === 'ACTIVE' ? 'default' : 'secondary'}>
                                     {bot.status}
@@ -129,22 +131,22 @@ export function CloudBotList() {
 
                                 <div className="bg-muted p-2 rounded text-xs space-y-1">
                                     <div className="flex justify-between">
-                                        <span>Last Check:</span>
+                                        <span>{t('lastCheck')}:</span>
                                         <span>
                                             {bot.bot_state?.last_check_at
                                                 ? formatDistanceToNow(new Date(bot.bot_state.last_check_at), { addSuffix: true })
-                                                : 'Never'}
+                                                : t('never')}
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Position:</span>
+                                        <span>{t('position')}:</span>
                                         <span className={bot.bot_state?.position === 'LONG' ? 'text-green-500' : 'text-muted-foreground'}>
-                                            {bot.bot_state?.position || 'NONE'}
+                                            {bot.bot_state?.position || t('none')}
                                         </span>
                                     </div>
                                     {bot.bot_state?.pnl !== undefined && (
                                         <div className="flex justify-between font-mono">
-                                            <span>PnL:</span>
+                                            <span>{t('pnl')}:</span>
                                             <span className={bot.bot_state.pnl >= 0 ? 'text-green-500' : 'text-red-500'}>
                                                 {bot.bot_state.pnl.toFixed(2)} USDT
                                             </span>
@@ -160,7 +162,7 @@ export function CloudBotList() {
                                         onClick={() => handleToggle(bot.id)}
                                     >
                                         {bot.status === 'ACTIVE' ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                                        {bot.status === 'ACTIVE' ? 'Pause' : 'Resume'}
+                                        {bot.status === 'ACTIVE' ? t('pause') : t('resume')}
                                     </Button>
                                     <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(bot.id)}>
                                         <Trash2 className="w-4 h-4" />

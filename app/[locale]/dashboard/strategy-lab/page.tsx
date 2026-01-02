@@ -74,7 +74,7 @@ const mapIndicatorData = (candles: Candle[], values?: number[]) => {
 };
 
 export default function StrategyLabPage() {
-    const t = useTranslations('Dashboard');
+    const t = useTranslations('StrategyLab');
 
     // Configuration State
     const [symbol, setSymbol] = useState<string>(DEFAULT_CONFIG.symbol);
@@ -392,7 +392,7 @@ export default function StrategyLabPage() {
             <aside className="w-[340px] 2xl:w-[400px] border-r bg-card/50 backdrop-blur-xl flex flex-col z-30 transition-all duration-300 shadow-md">
                 <div className="h-14 px-4 border-b flex items-center justify-between bg-background/50 backdrop-blur-md">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold tracking-wider uppercase text-foreground/80">Strategy Lab</span>
+                        <span className="text-sm font-bold tracking-wider uppercase text-foreground/80">{t('title')}</span>
                         {realtimeState?.status === 'running' && (
                             <Badge variant="destructive" className="animate-pulse px-1.5 py-0.5 text-[9px] font-mono tracking-widest">LIVE</Badge>
                         )}
@@ -415,11 +415,11 @@ export default function StrategyLabPage() {
                             <div className="flex gap-2">
                                 <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={handleSaveOpen}>
                                     <Save className="w-3.5 h-3.5 mr-2" />
-                                    Save
+                                    {t('saveStrategy')}
                                 </Button>
                                 <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={handleLoadStrategies}>
                                     <RefreshCw className="w-3.5 h-3.5 mr-2" />
-                                    Load
+                                    {t('loadStrategy')}
                                 </Button>
                             </div>
                             {/* Share Button (Only for saved strategies) */}
@@ -439,7 +439,7 @@ export default function StrategyLabPage() {
 
                         {/* 2. Market Config */}
                         <div className="space-y-3">
-                            <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Market Data</label>
+                            <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{t('marketData')}</label>
                             <div className="flex flex-col gap-4">
                                 <Select value={symbol} onValueChange={setSymbol}>
                                     <SelectTrigger className="h-9 w-full bg-background/50">
@@ -455,20 +455,20 @@ export default function StrategyLabPage() {
 
                                 {/* Date Range Picker */}
                                 <div className="space-y-2 pt-2">
-                                    <label className="text-xs font-medium text-muted-foreground">Date Range (Optional)</label>
+                                    <label className="text-xs font-medium text-muted-foreground">{t('dateRange')}</label>
                                     <div className="flex gap-2">
                                         <Input
                                             type="date"
                                             value={startDate}
                                             onChange={(e) => setStartDate(e.target.value)}
-                                            placeholder="Start"
+                                            placeholder={t('start')}
                                             className="h-9 bg-background/50 text-xs"
                                         />
                                         <Input
                                             type="date"
                                             value={endDate}
                                             onChange={(e) => setEndDate(e.target.value)}
-                                            placeholder="End"
+                                            placeholder={t('end')}
                                             className="h-9 bg-background/50 text-xs"
                                         />
                                     </div>
@@ -479,7 +479,7 @@ export default function StrategyLabPage() {
                                             className="text-xs h-6 px-2"
                                             onClick={() => { setStartDate(''); setEndDate(''); }}
                                         >
-                                            Clear dates
+                                            {t('clearDates')}
                                         </Button>
                                     )}
                                 </div>
@@ -492,7 +492,7 @@ export default function StrategyLabPage() {
                         {selectedStrategy && (
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Parameters</label>
+                                    <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{t('parameters')}</label>
                                 </div>
                                 <div className="border rounded-lg p-3 bg-muted/30">
                                     {selectedStrategy.id === 'pine-script' ? (
@@ -522,7 +522,7 @@ export default function StrategyLabPage() {
                                 <div className="absolute inset-0 bg-primary/10 group-hover:bg-primary/20 transition-colors" />
                                 <span className="relative flex items-center justify-center">
                                     {isRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                                    Run Backtest
+                                    {t('runBacktest')}
                                 </span>
                             </Button>
 
@@ -533,12 +533,12 @@ export default function StrategyLabPage() {
                                 onClick={handleToggleRealtime}
                                 disabled={!selectedStrategy}
                             >
-                                {realtimeState?.status === 'running' ? "Stop Monitoring" : (isLiveMode ? "Start Live Trading" : "Start Paper Trading")}
+                                {realtimeState?.status === 'running' ? t('stop') : (isLiveMode ? t('startLive') : t('startPaper'))}
                             </Button>
 
                             <div className="flex items-center justify-between px-2 pt-2">
                                 <Label htmlFor="live-mode" className={`text-xs font-semibold ${isLiveMode ? 'text-red-500' : 'text-muted-foreground'}`}>
-                                    {isLiveMode ? "LIVE EXECUTION ENABLED" : "Paper Trading Mode"}
+                                    {isLiveMode ? t('liveExecutionEnabled') : t('paperTradingMode')}
                                 </Label>
                                 <Switch
                                     id="live-mode"
@@ -555,7 +555,7 @@ export default function StrategyLabPage() {
                 {realtimeState && (
                     <div className="h-32 border-t bg-black/90 p-2 font-mono text-[10px]">
                         <div className="flex justify-between items-center mb-1 text-muted-foreground">
-                            <span>Real-time Logs</span>
+                            <span>{t('realtimeLogs')}</span>
                             <span className={realtimeState.status === 'running' ? 'text-green-500' : 'text-red-500'}>●</span>
                         </div>
                         <ScrollArea className="h-[calc(100%-1.5rem)]">
@@ -575,10 +575,10 @@ export default function StrategyLabPage() {
                         {/* Tabs Bar */}
                         <div className="h-12 border-b bg-background/40 backdrop-blur-md px-4 flex items-center">
                             <TabsList className="bg-background/60 backdrop-blur-md border shadow-sm h-9">
-                                <TabsTrigger value="chart" className="text-xs h-7 px-4">Chart</TabsTrigger>
-                                <TabsTrigger value="analysis" className="text-xs h-7 px-4">Analysis</TabsTrigger>
-                                <TabsTrigger value="summary" className="text-xs h-7 px-4">Summary</TabsTrigger>
-                                <TabsTrigger value="trades" className="text-xs h-7 px-4">Trades</TabsTrigger>
+                                <TabsTrigger value="chart" className="text-xs h-7 px-4">{t('tabs.chart')}</TabsTrigger>
+                                <TabsTrigger value="analysis" className="text-xs h-7 px-4">{t('tabs.analysis')}</TabsTrigger>
+                                <TabsTrigger value="summary" className="text-xs h-7 px-4">{t('tabs.summary')}</TabsTrigger>
+                                <TabsTrigger value="trades" className="text-xs h-7 px-4">{t('tabs.trades')}</TabsTrigger>
                             </TabsList>
                         </div>
 
@@ -601,7 +601,7 @@ export default function StrategyLabPage() {
                                         ) : (
                                             <Download className="w-4 h-4 mr-2" />
                                         )}
-                                        Save Result
+                                        {t('saveResult')}
                                     </Button>
                                 </div>
                             </div>
@@ -638,8 +638,8 @@ export default function StrategyLabPage() {
                                             <Play className="w-12 h-12 opacity-20" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-medium text-center">Ready to Backtest</h3>
-                                            <p className="text-sm opacity-70 text-center">Configure your strategy and press Run</p>
+                                            <h3 className="text-lg font-medium text-center">{t('ready')}</h3>
+                                            <p className="text-sm opacity-70 text-center">{t('configurePrompt')}</p>
                                         </div>
                                     </div>
                                 )}
@@ -703,23 +703,23 @@ export default function StrategyLabPage() {
             <Dialog open={isPasscodeOpne} onOpenChange={setIsPasscodeOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Unlock API Keys</DialogTitle>
+                        <DialogTitle>{t('unlockKeys')}</DialogTitle>
                         <DialogDescription>
-                            Enter your security passcode to decrypt keys and start LIVE trading.
+                            {t('enterPasscode')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Input
                             type="password"
-                            placeholder="Passcode"
+                            placeholder={t('passcode')}
                             value={passcode}
                             onChange={(e) => setPasscode(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleUnlockAndStart()}
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsPasscodeOpen(false)}>Cancel</Button>
-                        <Button onClick={handleUnlockAndStart}>Unlock & Start</Button>
+                        <Button variant="outline" onClick={() => setIsPasscodeOpen(false)}>{t('cancel')}</Button>
+                        <Button onClick={handleUnlockAndStart}>{t('unlockAndStart')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

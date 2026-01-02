@@ -9,8 +9,10 @@ import { ApiKeyManager } from '@/features/trade/components/ApiKeyManager';
 import { supabase } from '@/lib/supabase';
 import { Send, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useTranslations } from 'next-intl';
 
 export default function SettingsPage() {
+    const t = useTranslations('Settings');
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -136,24 +138,24 @@ export default function SettingsPage() {
 
     return (
         <div className="max-w-4xl space-y-8">
-            <h1 className="text-3xl font-bold">Settings</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
 
             {/* Account */}
             <section>
-                <h2 className="text-xl font-bold mb-4">Account</h2>
+                <h2 className="text-xl font-bold mb-4">{t('account')}</h2>
                 <Card className="p-6">
                     <div className="grid gap-4 max-w-sm">
                         <div>
-                            <Label htmlFor="fullName">Full Name</Label>
+                            <Label htmlFor="fullName">{t('fullName')}</Label>
                             <Input
                                 id="fullName"
                                 value={fullName}
                                 onChange={(e) => setFullName(e.target.value)}
-                                placeholder="Enter your full name"
+                                placeholder={t('fullnamePlaceholder')}
                             />
                         </div>
                         <div>
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email">{t('email')}</Label>
                             <Input
                                 id="email"
                                 type="email"
@@ -163,19 +165,19 @@ export default function SettingsPage() {
                             />
                         </div>
                         <div>
-                            <Label>Password</Label>
+                            <Label>{t('password')}</Label>
                             <button className="text-primary hover:underline text-sm">
-                                Change Password
+                                {t('changePassword')}
                             </button>
                         </div>
                         <Button onClick={handleSaveProfile} disabled={saving}>
                             {saving ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving...
+                                    {t('saving')}
                                 </>
                             ) : (
-                                'Save Changes'
+                                t('saveChanges')
                             )}
                         </Button>
                     </div>
@@ -189,26 +191,26 @@ export default function SettingsPage() {
 
             {/* Notifications */}
             <section>
-                <h2 className="text-xl font-bold mb-4">Notifications</h2>
+                <h2 className="text-xl font-bold mb-4">{t('notifications')}</h2>
                 <Card className="p-6 space-y-6">
                     {/* General Notifications */}
                     <div>
-                        <h3 className="font-medium mb-4">General</h3>
+                        <h3 className="font-medium mb-4">{t('general')}</h3>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-medium">Trade Executions</h4>
+                                    <h4 className="font-medium">{t('tradeExecutions')}</h4>
                                     <p className="text-sm text-muted-foreground">
-                                        Get notified when a bot executes a trade
+                                        {t('tradeExecutionsDesc')}
                                     </p>
                                 </div>
                                 <input type="checkbox" className="toggle" defaultChecked />
                             </div>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-medium">Daily Summary</h4>
+                                    <h4 className="font-medium">{t('dailySummary')}</h4>
                                     <p className="text-sm text-muted-foreground">
-                                        Receive a daily PnL report via email
+                                        {t('dailySummaryDesc')}
                                     </p>
                                 </div>
                                 <input type="checkbox" className="toggle" />
@@ -218,19 +220,19 @@ export default function SettingsPage() {
 
                     {/* Telegram Settings */}
                     <div className="border-t pt-6">
-                        <h3 className="font-medium mb-4">Telegram Integration</h3>
+                        <h3 className="font-medium mb-4">{t('telegram')}</h3>
                         <div className="space-y-4">
                             <div>
-                                <Label htmlFor="telegramBotToken">Bot Token</Label>
+                                <Label htmlFor="telegramBotToken">{t('botToken')}</Label>
                                 <Input
                                     id="telegramBotToken"
                                     value={telegramBotToken}
                                     onChange={(e) => setTelegramBotToken(e.target.value)}
-                                    placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                                    placeholder={t('botTokenPlaceholder')}
                                     type="password"
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Get your bot token from{' '}
+                                    {t('getTokenGuide')} {' '}
                                     <a
                                         href="https://t.me/botfather"
                                         target="_blank"
@@ -242,15 +244,15 @@ export default function SettingsPage() {
                                 </p>
                             </div>
                             <div>
-                                <Label htmlFor="telegramChatId">Chat ID</Label>
+                                <Label htmlFor="telegramChatId">{t('chatId')}</Label>
                                 <Input
                                     id="telegramChatId"
                                     value={telegramChatId}
                                     onChange={(e) => setTelegramChatId(e.target.value)}
-                                    placeholder="123456789"
+                                    placeholder={t('chatIdPlaceholder')}
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Start a chat with your bot and get your Chat ID
+                                    {t('getChatIdGuide')}
                                 </p>
                             </div>
                             <div className="flex gap-2">
@@ -262,17 +264,17 @@ export default function SettingsPage() {
                                     {testingTelegram ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Testing...
+                                            {t('testing')}
                                         </>
                                     ) : (
                                         <>
                                             <Send className="mr-2 h-4 w-4" />
-                                            Test Telegram
+                                            {t('testTelegram')}
                                         </>
                                     )}
                                 </Button>
                                 <Button onClick={handleSaveProfile} disabled={saving}>
-                                    {saving ? 'Saving...' : 'Save Settings'}
+                                    {saving ? t('saving') : t('saveChanges')}
                                 </Button>
                             </div>
                         </div>
