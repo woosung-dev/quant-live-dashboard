@@ -18,7 +18,8 @@ import {
     FileText,
     Globe,
     Sun,
-    Moon
+    Moon,
+    LucideIcon
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -32,31 +33,14 @@ import {
     SheetClose,
 } from '@/components/ui/sheet';
 
-// Navigation menu structure
-const navigationItems = [
-    {
-        label: 'Features',
-        href: '/#features',
-        submenu: [
-            { label: 'Strategy Lab', href: '/dashboard/strategy-lab', icon: FlaskConical, description: 'Build & test strategies' },
-            { label: 'Backtest Engine', href: '/dashboard/strategy-lab#backtest', icon: BarChart3, description: 'Historical performance' },
-            { label: 'Live Trading', href: '/dashboard/live', icon: Zap, description: 'Real-time execution' },
-        ]
-    },
-    {
-        label: 'Docs',
-        href: '/docs',
-        submenu: [
-            { label: 'Getting Started', href: '/docs/getting-started', icon: BookOpen, description: 'Quick start guide' },
-            { label: 'API Reference', href: '/docs/api', icon: Code, description: 'Developer documentation' },
-            { label: 'Pine Script Guide', href: '/docs/pine-script', icon: FileText, description: 'Strategy scripting' },
-        ]
-    },
-    {
-        label: 'Pricing',
-        href: '/pricing',
-    },
-];
+// Interface for navigation items
+interface NavItem {
+    label: string;
+    href: string;
+    icon?: LucideIcon;
+    description?: string;
+    submenu?: NavItem[];
+}
 
 // Language options
 const languages = [
@@ -65,7 +49,7 @@ const languages = [
 ];
 
 // Desktop dropdown menu component
-const DesktopNavItem = ({ item }: { item: typeof navigationItems[0] }) => {
+const DesktopNavItem = ({ item }: { item: NavItem }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     if (!item.submenu) {
@@ -111,7 +95,7 @@ const DesktopNavItem = ({ item }: { item: typeof navigationItems[0] }) => {
                                     className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors group"
                                 >
                                     <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 group-hover:border-emerald-500/40 transition-colors">
-                                        <subItem.icon className="h-4 w-4 text-emerald-400" />
+                                        {subItem.icon && <subItem.icon className="h-4 w-4 text-emerald-400" />}
                                     </div>
                                     <div>
                                         <div className="text-sm font-medium text-foreground">{subItem.label}</div>
@@ -191,7 +175,7 @@ const MobileNavItem = ({
     item,
     onClose
 }: {
-    item: typeof navigationItems[0];
+    item: NavItem;
     onClose: () => void;
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -237,7 +221,7 @@ const MobileNavItem = ({
                                     onClick={onClose}
                                     className="flex items-center gap-3 py-3 px-4 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-colors"
                                 >
-                                    <subItem.icon className="h-4 w-4 text-emerald-400" />
+                                    {subItem.icon && <subItem.icon className="h-4 w-4 text-emerald-400" />}
                                     <span>{subItem.label}</span>
                                 </Link>
                             ))}
@@ -316,6 +300,19 @@ export const PublicNavbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const { theme, setTheme } = useTheme();
+    const t = useTranslations('Navbar');
+
+    const navigationItems: NavItem[] = [
+        {
+            label: t('features.label'),
+            href: '/#features',
+            submenu: [
+                { label: t('features.strategyLab.label'), href: '/dashboard/strategy-lab', icon: FlaskConical, description: t('features.strategyLab.description') },
+                { label: t('features.backtest.label'), href: '/dashboard/strategy-lab#backtest', icon: BarChart3, description: t('features.backtest.description') },
+                { label: t('features.liveTrading.label'), href: '/dashboard/live', icon: Zap, description: t('features.liveTrading.description') },
+            ]
+        }
+    ];
 
     // Prevent hydration mismatch - only render theme-dependent content after mount
     useEffect(() => {

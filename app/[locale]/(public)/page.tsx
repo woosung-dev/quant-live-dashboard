@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
   TrendingUp,
@@ -18,34 +19,36 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { Footer } from '@/components/layout/Footer';
 
-const features = [
+const getFeatures = (t: any) => [
   {
     icon: BarChart3,
-    title: "실시간 백테스트",
-    desc: "과거 데이터로 당신의 전략을 검증하세요. 실제 시장 데이터로 정확한 시뮬레이션을 제공합니다.",
+    title: t('features.backtest.title'),
+    desc: t('features.backtest.desc'),
     color: "from-emerald-400 to-cyan-400"
   },
   {
     icon: Bell,
-    title: "스마트 알림",
-    desc: "카카오톡, 텔레그램, 이메일로 실시간 매매 시그널을 받아보세요. 중요한 순간을 놓치지 마세요.",
+    title: t('features.alerts.title'),
+    desc: t('features.alerts.desc'),
     color: "from-blue-400 to-purple-400"
   },
   {
     icon: Zap,
-    title: "자동 매매",
-    desc: "검증된 전략을 24/7 자동으로 실행하세요. 감정 없는 일관된 트레이딩이 가능합니다.",
+    title: t('features.autotrading.title'),
+    desc: t('features.autotrading.desc'),
     color: "from-orange-400 to-pink-400"
   },
   {
     icon: Shield,
-    title: "안전한 연동",
-    desc: "API 키는 암호화되어 저장됩니다. 출금 권한 없이 안전하게 거래소와 연동됩니다.",
+    title: t('features.security.title'),
+    desc: t('features.security.desc'),
     color: "from-violet-400 to-indigo-400"
   }
 ];
 
 export default function Home() {
+  const t = useTranslations('LandingPage');
+  const features = getFeatures(t);
   const { price, isConnected } = useWebSocket('btcusdt');
   const [history, setHistory] = useState<{ time: number; value: number }[]>([]);
 
@@ -102,7 +105,7 @@ export default function Home() {
             >
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                실시간 시장 연동 중
+                {t('hero.badge')}
               </span>
             </motion.div>
 
@@ -113,11 +116,7 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-6xl lg:text-7xl font-bold text-center leading-tight mb-6"
             >
-              <span className="text-foreground">퀀트 트레이딩을</span>
-              <br />
-              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                누구나 쉽게
-              </span>
+              <span className="text-foreground" dangerouslySetInnerHTML={{ __html: t.raw('hero.title').replace('\n', '<br/>') }} />
             </motion.h1>
 
             {/* Subtitle */}
@@ -127,9 +126,7 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="text-lg md:text-xl text-muted-foreground text-center max-w-2xl mb-10"
             >
-              전략 검증부터 자동 매매까지,
-              <br className="hidden sm:block" />
-              복잡한 알고리즘 트레이딩을 간단하게 시작하세요.
+              <span dangerouslySetInnerHTML={{ __html: t.raw('hero.subtitle').replace('\n', '<br class="hidden sm:block" />') }} />
             </motion.p>
 
             {/* CTA Buttons */}
@@ -143,7 +140,7 @@ export default function Home() {
                 href="/signup"
                 className="group px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-lg rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25"
               >
-                무료로 시작하기
+                {t('hero.startFree')}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
@@ -151,7 +148,7 @@ export default function Home() {
                 className="px-8 py-4 bg-card border border-border text-foreground font-semibold text-lg rounded-2xl hover:bg-muted transition-all flex items-center justify-center gap-2"
               >
                 <Play className="w-5 h-5" />
-                서비스 소개 보기
+                {t('hero.viewDocs')}
               </Link>
             </motion.div>
 
@@ -179,7 +176,7 @@ export default function Home() {
                     <div className="flex items-center gap-1 text-sm">
                       <span className={`flex items-center gap-1 ${isConnected ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                         <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-muted-foreground'}`} />
-                        {isConnected ? '실시간' : '연결 중...'}
+                        {isConnected ? t('hero.chartLive') : t('hero.chartConnecting')}
                       </span>
                     </div>
                   </div>
@@ -204,10 +201,10 @@ export default function Home() {
               className="text-center mb-16"
             >
               <h2 className="text-3xl md:text-5xl font-bold mb-4">
-                왜 <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">QUANT.LIVE</span>인가요?
+                {t('features.title')} <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">QUANT.LIVE</span>?
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                복잡한 퀀트 트레이딩, 우리가 쉽게 만들었습니다.
+                {t('features.subtitle')}
               </p>
             </motion.div>
 
@@ -242,9 +239,9 @@ export default function Home() {
               className="grid md:grid-cols-3 gap-8 text-center"
             >
               {[
-                { value: "10,000+", label: "누적 백테스트", suffix: "회" },
-                { value: "500+", label: "활성 전략", suffix: "개" },
-                { value: "99.9%", label: "서비스 가동률", suffix: "" }
+                { value: "10,000+", label: t('stats.backtests'), suffix: t('stats.times') },
+                { value: "500+", label: t('stats.strategies'), suffix: t('stats.count') },
+                { value: "99.9%", label: t('stats.uptime'), suffix: "" }
               ].map((stat, i) => (
                 <div key={i} className="p-8">
                   <p className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2">
@@ -270,11 +267,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="text-4xl md:text-6xl font-bold mb-6"
             >
-              지금 바로
-              <br />
-              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                시작하세요
-              </span>
+              <span dangerouslySetInnerHTML={{ __html: t.raw('cta.title').replace('\n', '<br/>') }} />
             </motion.h2>
 
             <motion.p
@@ -284,7 +277,7 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="text-lg text-muted-foreground mb-10"
             >
-              무료로 시작하고, 당신만의 트레이딩 전략을 검증해보세요.
+              {t('cta.subtitle')}
             </motion.p>
 
             <motion.div
@@ -297,7 +290,7 @@ export default function Home() {
                 href="/signup"
                 className="inline-flex items-center gap-2 px-10 py-5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-xl rounded-2xl hover:opacity-90 transition-all shadow-lg shadow-emerald-500/25"
               >
-                무료로 시작하기
+                {t('cta.button')}
                 <ChevronRight className="w-6 h-6" />
               </Link>
             </motion.div>
