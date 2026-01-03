@@ -9,7 +9,7 @@ import { ProfitDisplay } from '@/components/simulation/ProfitDisplay';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { runCustomStrategy } from '@/features/backtest/lib/simulation';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 
 export default function StrategyDetailPage() {
     const { id } = useParams();
