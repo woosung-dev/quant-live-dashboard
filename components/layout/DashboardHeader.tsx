@@ -39,15 +39,17 @@ import {
 
 // Navigation items - Exchange style
 // Navigation items defined inside component to use translations
-const getNavItems = (t: any) => [
+const getLeftNavItems = (t: any) => [
     { label: t('overview'), href: '/dashboard', icon: LayoutDashboard },
+    { label: t('explorer'), href: '/dashboard/explorer', icon: Search },
     { label: t('strategyLab'), href: '/dashboard/strategy-lab', icon: FlaskConical },
     { label: t('marketplace'), href: '/dashboard/marketplace', icon: ShoppingBag },
-    { label: t('explorer'), href: '/dashboard/explorer', icon: Search },
-    { label: t('bots'), href: '/dashboard/bots', icon: Bot },
+];
+
+const getRightNavItems = (t: any) => [
     { label: t('liveTrading'), href: '/dashboard/live', icon: Activity },
+    { label: t('bots'), href: '/dashboard/bots', icon: Bot },
     { label: t('portfolio'), href: '/dashboard/portfolio', icon: PieChart },
-    { label: t('settings'), href: '/dashboard/settings', icon: Settings },
 ];
 
 const languages = [
@@ -60,7 +62,9 @@ export function DashboardHeader() {
     const locale = useLocale();
     const t = useTranslations('Navigation');
     const router = useRouter();
-    const navItems = getNavItems(t);
+    const leftNavItems = getLeftNavItems(t);
+    const rightNavItems = getRightNavItems(t);
+    const allNavItems = [...leftNavItems, ...rightNavItems, { label: t('settings'), href: '/dashboard/settings', icon: Settings }];
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
@@ -119,9 +123,9 @@ export function DashboardHeader() {
                     </span>
                 </Link>
 
-                {/* Desktop Navigation - Exchange Style Tabs */}
+                {/* Desktop Navigation - Left (Analysis) */}
                 <nav className="hidden md:flex items-center gap-1">
-                    {navItems.map((item) => {
+                    {leftNavItems.map((item) => {
                         const active = isActive(item.href);
                         return (
                             <Link
@@ -141,6 +145,26 @@ export function DashboardHeader() {
 
                 {/* Spacer */}
                 <div className="flex-1" />
+
+                {/* Desktop Navigation - Right (Management) */}
+                <nav className="hidden md:flex items-center gap-1 mr-4">
+                    {rightNavItems.map((item) => {
+                        const active = isActive(item.href);
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${active
+                                    ? 'text-emerald-400 bg-emerald-500/10'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                                    }`}
+                            >
+                                <item.icon className="h-4 w-4" />
+                                <span>{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                </nav>
 
                 {/* Right Section */}
                 <div className="flex items-center gap-1 md:gap-2">
@@ -280,7 +304,7 @@ export function DashboardHeader() {
 
                             {/* Mobile Navigation */}
                             <nav className="flex flex-col p-2">
-                                {navItems.map((item) => {
+                                {allNavItems.map((item) => {
                                     const active = isActive(item.href);
                                     return (
                                         <Link

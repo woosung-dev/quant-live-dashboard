@@ -336,9 +336,9 @@ export const PublicNavbar = () => {
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 group">
+                <Link href="/" className="flex items-center gap-2 group mr-8">
                     <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/20">
                         <TrendingUp className="text-white" size={20} />
                     </div>
@@ -355,7 +355,7 @@ export const PublicNavbar = () => {
                 </div>
 
                 {/* Right Section: Language + Theme + Auth */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-auto">
                     {/* Language Switcher - Desktop */}
                     <div className="hidden md:block">
                         <LanguageSwitcherDropdown />
