@@ -230,11 +230,3 @@ Binance API로부터 증분 업데이트(Incremental Update)를 받아 효율적
 
 - **Email**: jangwooseng97@gmail.com
 - **GitHub**: [@woosung-dev](https://github.com/woosung-dev)
-
----
-
-<div align="center">
-
-**Built with ❤️ using Next.js, React, and Supabase**
-
-</div>
